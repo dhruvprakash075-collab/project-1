@@ -9,11 +9,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Apps
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.InsertDriveFile
+import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.Card
@@ -31,7 +31,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.openfiles.core.common.UiState
 import com.openfiles.core.common.toHumanReadableSize
@@ -45,7 +45,7 @@ import com.openfiles.core.ui.components.ErrorState
 @Composable
 fun StorageDashboardScreen(
     onBack: () -> Unit,
-    viewModel: StorageDashboardViewModel = hiltViewModel(),
+    viewModel: StorageDashboardViewModel = viewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
@@ -55,7 +55,7 @@ fun StorageDashboardScreen(
                 title = { Text("Storage") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
             )
@@ -114,7 +114,7 @@ private fun StorageCategory.icon(): ImageVector = when (this) {
     StorageCategory.DOCUMENTS -> Icons.Filled.Description
     StorageCategory.APPS -> Icons.Filled.Apps
     StorageCategory.DOWNLOADS -> Icons.Filled.Download
-    StorageCategory.OTHER -> Icons.Filled.InsertDriveFile
+    StorageCategory.OTHER -> Icons.AutoMirrored.Filled.InsertDriveFile
 }
 
 private fun StorageCategory.label(): String = when (this) {
