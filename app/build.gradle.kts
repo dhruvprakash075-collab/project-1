@@ -11,6 +11,10 @@ android {
     namespace = "com.openfiles"
     compileSdk = 36
 
+    lint {
+        disable += "PropertyEscape"
+    }
+
     defaultConfig {
         applicationId = "com.openfiles"
         minSdk = 26
