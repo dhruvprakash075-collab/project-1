@@ -58,7 +58,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.openfiles.core.common.FileItem
 import com.openfiles.core.common.Route
@@ -76,7 +76,7 @@ import java.nio.file.Paths
 @Composable
 fun BrowserScreen(
     modifier: Modifier = Modifier,
-    viewModel: BrowserViewModel = viewModel(),
+    viewModel: BrowserViewModel = hiltViewModel(),
     onOpenRoute: (Route) -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()

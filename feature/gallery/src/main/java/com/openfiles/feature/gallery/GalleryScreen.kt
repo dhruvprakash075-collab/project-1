@@ -18,7 +18,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.openfiles.core.common.Route
@@ -32,7 +32,7 @@ import com.openfiles.core.ui.components.ErrorState
 @Composable
 fun GalleryScreen(
     modifier: Modifier = Modifier,
-    viewModel: GalleryViewModel = viewModel(),
+    viewModel: GalleryViewModel = hiltViewModel(),
     onOpenRoute: (Route) -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
