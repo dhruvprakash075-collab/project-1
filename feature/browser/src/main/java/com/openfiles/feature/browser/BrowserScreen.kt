@@ -5,14 +5,18 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
@@ -20,8 +24,12 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.DriveFileMove
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -59,6 +67,7 @@ import com.openfiles.core.ui.FileOpener
 import com.openfiles.core.ui.components.CenteredProgress
 import com.openfiles.core.ui.components.EmptyState
 import com.openfiles.core.ui.components.ErrorState
+import java.nio.file.Path
 import java.nio.file.Paths
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -74,6 +83,10 @@ fun BrowserScreen(
     val opProgress by viewModel.opProgress.collectAsStateWithLifecycle()
     val renameTarget by viewModel.renameTarget.collectAsStateWithLifecycle()
     val showNewFolderDialog by viewModel.showNewFolderDialog.collectAsStateWithLifecycle()
+    val sortOption by viewModel.sortOption.collectAsStateWithLifecycle()
+    val isSearchActive by viewModel.isSearchActive.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val currentPath by viewModel.currentPath.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -97,8 +110,8 @@ fun BrowserScreen(
         modifier = modifier,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            if (selected.isNotEmpty()) {
-                SelectionTopBar(
+            when {
+                selected.isNotEmpty() -> SelectionTopBar(
                     count = selected.size,
                     onClose = viewModel::clearSelection,
                     onCopy = viewModel::copySelectionToClipboard,
@@ -110,12 +123,24 @@ fun BrowserScreen(
                             ?.let(viewModel::requestRename)
                     },
                 )
-            } else {
-                TopAppBar(title = { Text("Files") })
+                isSearchActive -> SearchTopBar(
+                    query = searchQuery,
+                    onQueryChange = viewModel::updateSearchQuery,
+                    onClose = viewModel::deactivateSearch,
+                )
+                else -> TopAppBar(
+                    title = { Text("Files") },
+                    actions = {
+                        IconButton(onClick = viewModel::activateSearch) {
+                            Icon(Icons.Filled.Search, contentDescription = "Search this folder")
+                        }
+                        SortMenuButton(current = sortOption, onSelect = viewModel::setSortOption)
+                    },
+                )
             }
         },
         floatingActionButton = {
-            if (selected.isEmpty() && clipboard == null) {
+            if (selected.isEmpty() && clipboard == null && !isSearchActive) {
                 FloatingActionButton(onClick = viewModel::requestNewFolder) {
                     Icon(Icons.Filled.Add, contentDescription = "New folder")
                 }
@@ -123,10 +148,16 @@ fun BrowserScreen(
         },
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
+            if (selected.isEmpty() && !isSearchActive) {
+                Breadcrumbs(path = currentPath, onNavigate = viewModel::open)
+            }
+
             Box(modifier = Modifier.weight(1f)) {
                 when (val s = state) {
                     UiState.Loading -> CenteredProgress()
-                    UiState.Empty -> EmptyState("This folder is empty")
+                    UiState.Empty -> EmptyState(
+                        if (searchQuery.isNotBlank()) "No files match \"$searchQuery\"" else "This folder is empty",
+                    )
                     is UiState.Error -> ErrorState(s.message, onRetry = viewModel::refresh)
                     is UiState.Content -> LazyColumn {
                         items(s.data.items, key = { it.uri.toString() }) { file ->
@@ -181,6 +212,90 @@ fun BrowserScreen(
     }
 }
 
+@Composable
+private fun Breadcrumbs(path: Path, onNavigate: (Path) -> Unit) {
+    val segments = remember(path) {
+        val parts = path.toString().trim('/').split('/').filter { it.isNotEmpty() }
+        var acc: Path = Paths.get("/")
+        val list = mutableListOf("Storage" to acc)
+        parts.forEach { part ->
+            acc = acc.resolve(part)
+            list += part to acc
+        }
+        list
+    }
+    LazyRow(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        itemsIndexed(segments) { index, (label, segmentPath) ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TextButton(
+                    onClick = { onNavigate(segmentPath) },
+                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
+                ) {
+                    Text(label, style = MaterialTheme.typography.bodyMedium)
+                }
+                if (index != segments.lastIndex) {
+                    Text("\u203A", style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SearchTopBar(query: String, onQueryChange: (String) -> Unit, onClose: () -> Unit) {
+    TopAppBar(
+        title = {
+            OutlinedTextField(
+                value = query,
+                onValueChange = onQueryChange,
+                singleLine = true,
+                placeholder = { Text("Search this folder") },
+                modifier = Modifier.fillMaxWidth(),
+            )
+        },
+        navigationIcon = {
+            IconButton(onClick = onClose) {
+                Icon(Icons.Filled.Close, contentDescription = "Close search")
+            }
+        },
+    )
+}
+
+@Composable
+private fun SortMenuButton(current: SortOption, onSelect: (SortOption) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { expanded = true }) {
+            Icon(Icons.Filled.Sort, contentDescription = "Sort")
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            SortOption.entries.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option.label()) },
+                    leadingIcon = {
+                        if (option == current) Icon(Icons.Filled.Check, contentDescription = null)
+                    },
+                    onClick = {
+                        onSelect(option)
+                        expanded = false
+                    },
+                )
+            }
+        }
+    }
+}
+
+private fun SortOption.label(): String = when (this) {
+    SortOption.NAME -> "Name"
+    SortOption.DATE -> "Date modified"
+    SortOption.SIZE -> "Size"
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SelectionTopBar(
@@ -228,7 +343,7 @@ private fun PasteBar(
         Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
             if (progress != null) {
                 val label = if (progress.mode == ClipboardMode.COPY) "Copying" else "Moving"
-                Text("$label ${progress.done}/${progress.total}…", style = MaterialTheme.typography.bodyMedium)
+                Text("$label ${progress.done}/${progress.total}...", style = MaterialTheme.typography.bodyMedium)
                 LinearProgressIndicator(
                     progress = { if (progress.total == 0) 0f else progress.done.toFloat() / progress.total },
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
