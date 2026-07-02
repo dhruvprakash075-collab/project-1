@@ -7,12 +7,14 @@ import com.openfiles.core.common.FileItem
 import com.openfiles.core.common.UiState
 import com.openfiles.core.data.FileRepository
 import com.openfiles.core.data.RecentsRepository
+import com.openfiles.core.data.TrashRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.io.File
 import java.nio.file.Path
 import java.nio.file.Paths
 import javax.inject.Inject
@@ -33,6 +35,7 @@ private val DEFAULT_ROOT: Path = Paths.get("/storage/emulated/0")
 class BrowserViewModel @Inject constructor(
     private val repo: FileRepository,
     private val recentsRepository: RecentsRepository,
+    private val trashRepository: TrashRepository,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
@@ -41,7 +44,6 @@ class BrowserViewModel @Inject constructor(
 
     private var currentPath: Path = DEFAULT_ROOT
 
-    /** Multi-select state for the current listing, keyed by item uri string. */
     private val _selected = MutableStateFlow<Set<String>>(emptySet())
     val selected: StateFlow<Set<String>> = _selected.asStateFlow()
 
@@ -85,11 +87,16 @@ class BrowserViewModel @Inject constructor(
     fun perform(action: FileOpAction) = viewModelScope.launch {
         when (action) {
             is FileOpAction.Rename -> action.item.path?.let { repo.rename(Paths.get(it), action.item.name) }
-            is FileOpAction.Delete -> repo.delete(action.items.mapNotNull { it.path?.let(Paths::get) })
+            is FileOpAction.Delete -> action.items.forEach { item ->
+                // Soft-delete only: destructive ops must be reversible. Never call
+                // FileRepository.delete() (hard delete) from the browser UI — see ADR-014.
+                item.path?.let { trashRepository.moveToTrash(File(it)) }
+            }
             is FileOpAction.Copy -> repo.copy(action.items.mapNotNull { it.path?.let(Paths::get) }, action.destination)
             is FileOpAction.Move -> repo.move(action.items.mapNotNull { it.path?.let(Paths::get) }, action.destination)
             is FileOpAction.NewFolder -> repo.createFolder(currentPath, action.name)
         }
+        clearSelection()
         refresh()
     }
 }
