@@ -1,0 +1,2 @@
+Hello from OpenFiles.
+This is a sample text file for emulator testing.
