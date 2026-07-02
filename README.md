@@ -33,6 +33,10 @@ Requires Android SDK (compileSdk 36) and JDK 17 installed locally; this repo was
 assembled outside of an Android toolchain, so run a local build before your first release to catch
 any environment-specific issues (SDK/NDK paths, licenses, JitPack availability for `poi-on-android`).
 
+## License
+
+GPL-3.0-or-later. See `LICENSE`.
+
 ## Architecture notes
 
 - **Permissions**: defaults to Storage Access Framework; "All files access" (`MANAGE_EXTERNAL_STORAGE`)
