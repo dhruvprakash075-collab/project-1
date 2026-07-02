@@ -15,6 +15,7 @@ media3 = "1.10.1"
 coroutines = "1.11.0"
 desugar = "2.1.5"
 zip4j = "2.11.6"
+junrar = "7.6.0"
 acra = "5.13.1"
 documentfile = "1.1.0"
 datastore = "1.2.1"
@@ -53,6 +54,7 @@ media3-ui = { module = "androidx.media3:media3-ui", version.ref = "media3" }
 coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 desugar-jdk-libs = { module = "com.android.tools:desugar_jdk_libs_nio", version.ref = "desugar" }
 zip4j = { module = "net.lingala.zip4j:zip4j", version.ref = "zip4j" }
+junrar = { module = "com.github.junrar:junrar", version.ref = "junrar" }
 acra-mail = { module = "ch.acra:acra-mail", version.ref = "acra" }
 acra-dialog = { module = "ch.acra:acra-dialog", version.ref = "acra" }
 androidx-documentfile = { module = "androidx.documentfile:documentfile", version.ref = "documentfile" }

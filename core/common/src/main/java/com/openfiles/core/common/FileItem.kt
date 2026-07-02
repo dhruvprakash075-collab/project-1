@@ -26,6 +26,7 @@ sealed interface Route {
     data class Archive(val uriString: String, val title: String) : Route
     data object Settings : Route
     data object Trash : Route
+    data object Storage : Route
 }
 
 enum class OfficeKind { XLSX, DOCX, PPTX }

@@ -25,6 +25,7 @@ import com.openfiles.feature.viewer.office.OfficeViewerScreen
 import com.openfiles.feature.viewer.pdf.PdfViewerScreen
 import com.openfiles.feature.viewer.text.TextViewerScreen
 import com.openfiles.settings.SettingsScreen
+import com.openfiles.storage.StorageDashboardScreen
 import com.openfiles.trash.TrashScreen
 
 /**
@@ -73,6 +74,7 @@ fun OpenFilesNavGraph() {
             is Route.Office -> OfficeViewerScreen(route = route, onBack = ::pop)
             is Route.Text -> TextViewerScreen(route = route, onBack = ::pop)
             is Route.Archive -> ArchiveViewerScreen(route = route, onBack = ::pop)
+            Route.Storage -> StorageDashboardScreen(onBack = ::pop)
         }
     }
 }

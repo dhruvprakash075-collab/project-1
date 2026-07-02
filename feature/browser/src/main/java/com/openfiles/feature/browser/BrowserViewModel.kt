@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.openfiles.core.common.FileItem
 import com.openfiles.core.common.UiState
+import com.openfiles.core.data.ArchiveRepository
 import com.openfiles.core.data.FileRepository
 import com.openfiles.core.data.RecentsRepository
 import com.openfiles.core.data.TrashRepository
@@ -44,6 +45,7 @@ class BrowserViewModel @Inject constructor(
     private val repo: FileRepository,
     private val recentsRepository: RecentsRepository,
     private val trashRepository: TrashRepository,
+    private val archiveRepository: ArchiveRepository,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
@@ -241,6 +243,21 @@ class BrowserViewModel @Inject constructor(
     fun confirmNewFolder(name: String) = viewModelScope.launch {
         _showNewFolderDialog.value = false
         repo.createFolder(_currentPath.value, name)
+        refresh()
+    }
+
+    fun compressSelection() = viewModelScope.launch {
+        val items = selectedItems()
+        clearSelection()
+        val sources = items.mapNotNull { it.path?.let(::File) }
+        if (sources.isEmpty()) return@launch
+        val name = if (sources.size == 1) "${sources.first().nameWithoutExtension}.zip" else "Archive_${System.currentTimeMillis()}.zip"
+        val destination = File(_currentPath.value.toFile(), name)
+        try {
+            archiveRepository.createZip(sources, destination)
+        } catch (e: Exception) {
+            _events.emit(BrowserEvent.ShowError(e.message ?: "Could not create zip"))
+        }
         refresh()
     }
 }
