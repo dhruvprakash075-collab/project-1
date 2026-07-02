@@ -14,7 +14,7 @@ object FileOpener {
     private val XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     private val DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     private val PPTX = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
-    private val ARCHIVE_EXT = setOf("zip", "tar", "gz", "tgz", "7z", "bz2", "xz")
+    private val ARCHIVE_EXT = setOf("zip", "tar", "gz", "tgz", "7z", "bz2", "xz", "rar")
 
     fun resolve(context: Context, file: FileItem): Route {
         val mime = file.mimeType ?: context.contentResolver.getType(file.uri) ?: "*/*"

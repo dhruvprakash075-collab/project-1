@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -28,10 +29,13 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FolderZip
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -99,6 +103,8 @@ fun BrowserScreen(
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val currentPath by viewModel.currentPath.collectAsStateWithLifecycle()
     val isBookmarked by viewModel.isCurrentPathBookmarked.collectAsStateWithLifecycle()
+    val tabs by viewModel.tabs.collectAsStateWithLifecycle()
+    val activeTabId by viewModel.activeTabId.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -151,19 +157,11 @@ fun BrowserScreen(
                                 contentDescription = if (isBookmarked) "Remove bookmark" else "Bookmark this folder",
                             )
                         }
-                        IconButton(onClick = { onOpenRoute(Route.Bookmarks) }) {
-                            Icon(Icons.Filled.Folder, contentDescription = "Bookmarks")
-                        }
-                        IconButton(onClick = { onOpenRoute(Route.Locked) }) {
-                            Icon(Icons.Filled.Lock, contentDescription = "Locked folder")
-                        }
-                        IconButton(onClick = { onOpenRoute(Route.Storage) }) {
-                            Icon(Icons.Filled.Storage, contentDescription = "Storage dashboard")
-                        }
                         IconButton(onClick = viewModel::activateSearch) {
                             Icon(Icons.Filled.Search, contentDescription = "Search this folder")
                         }
                         SortMenuButton(current = sortOption, onSelect = viewModel::setSortOption)
+                        OverflowMenuButton(onOpenRoute = onOpenRoute)
                     },
                 )
             }
@@ -178,6 +176,7 @@ fun BrowserScreen(
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
             if (selected.isEmpty() && !isSearchActive) {
+                TabStrip(tabs = tabs, activeTabId = activeTabId, onSelect = viewModel::switchTab, onClose = viewModel::closeTab, onAdd = viewModel::addTab)
                 Breadcrumbs(path = currentPath, onNavigate = viewModel::open)
             }
 
@@ -323,6 +322,62 @@ private fun SortOption.label(): String = when (this) {
     SortOption.NAME -> "Name"
     SortOption.DATE -> "Date modified"
     SortOption.SIZE -> "Size"
+}
+
+@Composable
+private fun OverflowMenuButton(onOpenRoute: (Route) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { expanded = true }) {
+            Icon(Icons.Filled.MoreVert, contentDescription = "More")
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(text = { Text("Bookmarks") }, onClick = { expanded = false; onOpenRoute(Route.Bookmarks) })
+            DropdownMenuItem(text = { Text("Locked folder") }, onClick = { expanded = false; onOpenRoute(Route.Locked) })
+            DropdownMenuItem(text = { Text("Storage dashboard") }, onClick = { expanded = false; onOpenRoute(Route.Storage) })
+            DropdownMenuItem(text = { Text("App manager") }, onClick = { expanded = false; onOpenRoute(Route.AppManager) })
+        }
+    }
+}
+
+@Composable
+private fun TabStrip(
+    tabs: List<BrowserTab>,
+    activeTabId: String,
+    onSelect: (String) -> Unit,
+    onClose: (String) -> Unit,
+    onAdd: () -> Unit,
+) {
+    LazyRow(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        items(tabs, key = { it.id }) { tab ->
+            val label = tab.path.fileName?.toString() ?: "Storage"
+            AssistChip(
+                onClick = { onSelect(tab.id) },
+                label = { Text(label) },
+                colors = if (tab.id == activeTabId) {
+                    AssistChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+                } else {
+                    AssistChipDefaults.assistChipColors()
+                },
+                trailingIcon = if (tabs.size > 1) {
+                    {
+                        IconButton(onClick = { onClose(tab.id) }, modifier = Modifier.size(18.dp)) {
+                            Icon(Icons.Filled.Close, contentDescription = "Close tab", modifier = Modifier.size(14.dp))
+                        }
+                    }
+                } else null,
+            )
+        }
+        item {
+            IconButton(onClick = onAdd) {
+                Icon(Icons.Filled.Add, contentDescription = "New tab")
+            }
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
