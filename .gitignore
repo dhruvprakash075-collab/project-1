@@ -14,3 +14,5 @@ local.properties
 *.keystore
 *.jks
 .kotlin
+jdk21/
+cmdline-tools.zip

@@ -30,6 +30,7 @@ data class BrowserUiData(val currentPath: Path, val items: List<FileItem>)
 enum class ClipboardMode { COPY, MOVE }
 data class ClipboardOp(val items: List<FileItem>, val mode: ClipboardMode)
 data class OpProgress(val mode: ClipboardMode, val done: Int, val total: Int)
+enum class SortOption { NAME, DATE, SIZE }
 
 sealed interface BrowserEvent {
     data class ShowUndoDelete(val item: TrashItem) : BrowserEvent
@@ -67,6 +68,17 @@ class BrowserViewModel @Inject constructor(
     private val _showNewFolderDialog = MutableStateFlow(false)
     val showNewFolderDialog: StateFlow<Boolean> = _showNewFolderDialog.asStateFlow()
 
+    private val _sortOption = MutableStateFlow(SortOption.NAME)
+    val sortOption: StateFlow<SortOption> = _sortOption.asStateFlow()
+
+    private val _isSearchActive = MutableStateFlow(false)
+    val isSearchActive: StateFlow<Boolean> = _isSearchActive.asStateFlow()
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    private var rawItems: List<FileItem> = emptyList()
+
     private val _events = MutableSharedFlow<BrowserEvent>()
     val events: SharedFlow<BrowserEvent> = _events.asSharedFlow()
 
@@ -77,15 +89,9 @@ class BrowserViewModel @Inject constructor(
     fun open(dir: Path) {
         _currentPath.value = dir
         _selected.value = emptySet()
-        viewModelScope.launch {
-            _state.value = UiState.Loading
-            _state.value = try {
-                val items = repo.listPath(dir)
-                if (items.isEmpty()) UiState.Empty else UiState.Content(BrowserUiData(dir, items))
-            } catch (e: Exception) {
-                UiState.Error(e.message ?: "Could not open folder", e)
-            }
-        }
+        _searchQuery.value = ""
+        _isSearchActive.value = false
+        loadCurrentFolder()
     }
 
     fun goUp(): Boolean {
@@ -94,7 +100,48 @@ class BrowserViewModel @Inject constructor(
         return true
     }
 
-    fun refresh() = open(_currentPath.value)
+    fun refresh() = loadCurrentFolder()
+
+    private fun loadCurrentFolder() = viewModelScope.launch {
+        _state.value = UiState.Loading
+        try {
+            rawItems = repo.listPath(_currentPath.value)
+            applyFilterAndSort()
+        } catch (e: Exception) {
+            _state.value = UiState.Error(e.message ?: "Could not open folder", e)
+        }
+    }
+
+    private fun applyFilterAndSort() {
+        val query = _searchQuery.value.trim()
+        val filtered = if (query.isEmpty()) rawItems else rawItems.filter { it.name.contains(query, ignoreCase = true) }
+        val sorted = when (_sortOption.value) {
+            SortOption.NAME -> filtered.sortedWith(compareByDescending<FileItem> { it.isDirectory }.thenBy { it.name.lowercase() })
+            SortOption.DATE -> filtered.sortedWith(compareByDescending<FileItem> { it.isDirectory }.thenByDescending { it.lastModified })
+            SortOption.SIZE -> filtered.sortedWith(compareByDescending<FileItem> { it.isDirectory }.thenByDescending { it.sizeBytes })
+        }
+        _state.value = if (sorted.isEmpty()) UiState.Empty else UiState.Content(BrowserUiData(_currentPath.value, sorted))
+    }
+
+    fun activateSearch() {
+        _isSearchActive.value = true
+    }
+
+    fun deactivateSearch() {
+        _isSearchActive.value = false
+        _searchQuery.value = ""
+        applyFilterAndSort()
+    }
+
+    fun updateSearchQuery(query: String) {
+        _searchQuery.value = query
+        applyFilterAndSort()
+    }
+
+    fun setSortOption(option: SortOption) {
+        _sortOption.value = option
+        applyFilterAndSort()
+    }
 
     fun toggleSelected(item: FileItem) {
         val key = item.uri.toString()
