@@ -24,8 +24,10 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.DriveFileMove
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.FolderZip
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
@@ -117,6 +119,7 @@ fun BrowserScreen(
                     onCopy = viewModel::copySelectionToClipboard,
                     onMove = viewModel::moveSelectionToClipboard,
                     onDelete = viewModel::deleteSelection,
+                    onCompress = viewModel::compressSelection,
                     onRename = {
                         (state as? UiState.Content)?.data?.items
                             ?.firstOrNull { it.uri.toString() in selected }
@@ -131,6 +134,9 @@ fun BrowserScreen(
                 else -> TopAppBar(
                     title = { Text("Files") },
                     actions = {
+                        IconButton(onClick = { onOpenRoute(Route.Storage) }) {
+                            Icon(Icons.Filled.Storage, contentDescription = "Storage dashboard")
+                        }
                         IconButton(onClick = viewModel::activateSearch) {
                             Icon(Icons.Filled.Search, contentDescription = "Search this folder")
                         }
@@ -304,6 +310,7 @@ private fun SelectionTopBar(
     onCopy: () -> Unit,
     onMove: () -> Unit,
     onDelete: () -> Unit,
+    onCompress: () -> Unit,
     onRename: () -> Unit,
 ) {
     TopAppBar(
@@ -324,6 +331,9 @@ private fun SelectionTopBar(
             }
             IconButton(onClick = onMove) {
                 Icon(Icons.Filled.DriveFileMove, contentDescription = "Move")
+            }
+            IconButton(onClick = onCompress) {
+                Icon(Icons.Filled.FolderZip, contentDescription = "Compress to zip")
             }
             IconButton(onClick = onDelete) {
                 Icon(Icons.Filled.Delete, contentDescription = "Delete")

@@ -35,10 +35,10 @@ class ArchiveViewerViewModel @Inject constructor(
             _state.value = try {
                 val file = withContext(Dispatchers.IO) { copyToCache(Uri.parse(uriString), name) }
                 localCopy = file
-                val entries = if (name.endsWith(".zip", true)) {
-                    archiveRepository.listZipEntries(file)
-                } else {
-                    archiveRepository.listTarEntries(file)
+                val entries = when {
+                    name.endsWith(".zip", true) -> archiveRepository.listZipEntries(file)
+                    name.endsWith(".rar", true) -> archiveRepository.listRarEntries(file)
+                    else -> archiveRepository.listTarEntries(file)
                 }
                 if (entries.isEmpty()) UiState.Empty else UiState.Content(entries)
             } catch (e: Exception) {
@@ -50,10 +50,10 @@ class ArchiveViewerViewModel @Inject constructor(
     fun extractAll(destination: File) {
         val file = localCopy ?: return
         viewModelScope.launch {
-            if (file.name.endsWith(".zip", true)) {
-                archiveRepository.extractZip(file, destination)
-            } else {
-                archiveRepository.extractGeneric(file, destination)
+            when {
+                file.name.endsWith(".zip", true) -> archiveRepository.extractZip(file, destination)
+                file.name.endsWith(".rar", true) -> archiveRepository.extractRar(file, destination)
+                else -> archiveRepository.extractGeneric(file, destination)
             }
         }
     }

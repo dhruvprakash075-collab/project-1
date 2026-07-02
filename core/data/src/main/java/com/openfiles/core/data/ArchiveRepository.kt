@@ -1,7 +1,8 @@
 package com.openfiles.core.data
 
 import android.content.Context
-import android.net.Uri
+import com.github.junrar.Archive
+import com.github.junrar.Junrar
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -18,9 +19,10 @@ import javax.inject.Singleton
 data class ArchiveEntryInfo(val name: String, val isDirectory: Boolean, val sizeBytes: Long)
 
 /**
- * Zip via zip4j (handles AES-encrypted zips), everything else (tar/tar.gz/7z read path) via
- * Commons Compress. Extraction always writes into the app-chosen destination directory; archives
- * are read-only otherwise (no in-place editing in v1).
+ * Zip via zip4j (handles AES-encrypted zips, and archive creation), RAR extraction via junrar
+ * (RAR 4 and lower only -- junrar does not support RAR5, see ADR-018), everything else (tar/tar.gz
+ * read path) via Commons Compress. Extraction always writes into the app-chosen destination
+ * directory; only zip supports in-app creation in v1 (RAR/tar creation is out of scope).
  */
 @Singleton
 class ArchiveRepository @Inject constructor(
@@ -38,6 +40,25 @@ class ArchiveRepository @Inject constructor(
             if (zip.isEncrypted && password != null) zip.setPassword(password)
             zip.extractAll(destination.absolutePath)
         }
+
+    /** Creates a zip at [destinationZip] containing every file/folder in [sources]. */
+    suspend fun createZip(sources: List<File>, destinationZip: File) = withContext(Dispatchers.IO) {
+        val zip = ZipFile(destinationZip)
+        sources.forEach { source ->
+            if (source.isDirectory) zip.addFolder(source) else zip.addFile(source)
+        }
+    }
+
+    suspend fun listRarEntries(archive: File): List<ArchiveEntryInfo> = withContext(Dispatchers.IO) {
+        Archive(archive).use { rar ->
+            rar.fileHeaders.map { ArchiveEntryInfo(it.fileName, it.isDirectory, it.fullUnpackSize) }
+        }
+    }
+
+    suspend fun extractRar(archive: File, destination: File) = withContext(Dispatchers.IO) {
+        destination.mkdirs()
+        Junrar.extract(archive, destination)
+    }
 
     suspend fun listTarEntries(archive: File): List<ArchiveEntryInfo> = withContext(Dispatchers.IO) {
         val entries = mutableListOf<ArchiveEntryInfo>()
