@@ -6,6 +6,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import net.lingala.zip4j.ZipFile
+import org.apache.commons.compress.archivers.ArchiveEntry
+import org.apache.commons.compress.archivers.ArchiveInputStream
 import org.apache.commons.compress.archivers.ArchiveStreamFactory
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import java.io.File
@@ -40,10 +42,10 @@ class ArchiveRepository @Inject constructor(
     suspend fun listTarEntries(archive: File): List<ArchiveEntryInfo> = withContext(Dispatchers.IO) {
         val entries = mutableListOf<ArchiveEntryInfo>()
         TarArchiveInputStream(archive.inputStream()).use { tar ->
-            var entry = tar.nextEntry
+            var entry = tar.getNextEntry()
             while (entry != null) {
                 entries += ArchiveEntryInfo(entry.name, entry.isDirectory, entry.size)
-                entry = tar.nextEntry
+                entry = tar.getNextEntry()
             }
         }
         entries
@@ -51,17 +53,19 @@ class ArchiveRepository @Inject constructor(
 
     suspend fun extractGeneric(archive: File, destination: File) = withContext(Dispatchers.IO) {
         destination.mkdirs()
-        ArchiveStreamFactory().createArchiveInputStream(archive.inputStream().buffered()).use { input ->
-            var entry = input.nextEntry
+        val input: ArchiveInputStream<out ArchiveEntry> =
+            ArchiveStreamFactory().createArchiveInputStream(archive.inputStream().buffered())
+        input.use {
+            var entry = it.getNextEntry()
             while (entry != null) {
                 val outFile = File(destination, entry.name)
                 if (entry.isDirectory) {
                     outFile.mkdirs()
                 } else {
                     outFile.parentFile?.mkdirs()
-                    FileOutputStream(outFile).use { out -> input.copyTo(out) }
+                    FileOutputStream(outFile).use { out -> it.copyTo(out) }
                 }
-                entry = input.nextEntry
+                entry = it.getNextEntry()
             }
         }
     }

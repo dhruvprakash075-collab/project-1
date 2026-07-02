@@ -8,7 +8,7 @@ plugins {
 android {
     namespace = "com.openfiles.feature.viewer"
     compileSdk = 36
-    defaultConfig { minSdk = 24 }
+    defaultConfig { minSdk = 26 }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -47,10 +47,6 @@ dependencies {
     implementation(libs.hilt.navigation.compose)
     ksp(libs.hilt.compiler)
     implementation(libs.coroutines.android)
-
-    implementation(libs.poi.android)
-    implementation(libs.zip4j)
-    implementation(libs.commons.compress)
 
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 }

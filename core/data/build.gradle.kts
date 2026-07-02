@@ -7,7 +7,7 @@ plugins {
 android {
     namespace = "com.openfiles.core.data"
     compileSdk = 36
-    defaultConfig { minSdk = 24 }
+    defaultConfig { minSdk = 26 }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -41,9 +41,8 @@ dependencies {
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
 
-    implementation(libs.poi.android)
+    implementation(files(rootProject.file("third_party/poishadow/poishadow-all-5.2.5-4.jar")))
     implementation(libs.zip4j)
-    implementation(libs.commons.compress)
 
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 

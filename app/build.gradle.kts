@@ -13,7 +13,7 @@ android {
 
     defaultConfig {
         applicationId = "com.openfiles"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 35
         versionCode = 1
         versionName = "1.0.0"
@@ -106,9 +106,6 @@ dependencies {
     implementation(libs.androidx.documentfile)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.core.splashscreen)
-    implementation(libs.poi.android)
-    implementation(libs.zip4j)
-    implementation(libs.commons.compress)
     implementation(libs.acra.mail)
     implementation(libs.acra.dialog)
 

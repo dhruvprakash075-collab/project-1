@@ -2,6 +2,7 @@ package com.openfiles.feature.viewer.media
 
 import android.net.Uri
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -47,7 +48,9 @@ fun MediaPlayerScreen(route: Route.Media, onBack: () -> Unit) {
         },
     ) { padding ->
         AndroidView(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize(),
             factory = { ctx -> PlayerView(ctx).apply { this.player = player } },
         )
     }

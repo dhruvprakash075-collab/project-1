@@ -8,15 +8,13 @@ activityCompose = "1.10.0"
 composeBom = "2026.06.00"
 navigation3 = "1.1.4"
 hilt = "2.60"
-hiltNavCompose = "1.4.0"
+hiltNavCompose = "1.3.0"
 room = "2.8.4"
 coil = "3.5.0"
 media3 = "1.10.1"
 coroutines = "1.11.0"
 desugar = "2.1.5"
-poiAndroid = "5.2.5-4"
 zip4j = "2.11.6"
-commonsCompress = "1.28.0"
 acra = "5.13.1"
 documentfile = "1.1.0"
 datastore = "1.2.1"
@@ -54,9 +52,7 @@ media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = 
 media3-ui = { module = "androidx.media3:media3-ui", version.ref = "media3" }
 coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 desugar-jdk-libs = { module = "com.android.tools:desugar_jdk_libs_nio", version.ref = "desugar" }
-poi-android = { module = "com.github.centic9.poi-on-android:poishadow-all", version.ref = "poiAndroid" }
 zip4j = { module = "net.lingala.zip4j:zip4j", version.ref = "zip4j" }
-commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "commonsCompress" }
 acra-mail = { module = "ch.acra:acra-mail", version.ref = "acra" }
 acra-dialog = { module = "ch.acra:acra-dialog", version.ref = "acra" }
 androidx-documentfile = { module = "androidx.documentfile:documentfile", version.ref = "documentfile" }

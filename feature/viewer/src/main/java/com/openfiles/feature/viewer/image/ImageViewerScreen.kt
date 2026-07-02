@@ -1,6 +1,7 @@
 package com.openfiles.feature.viewer.image
 
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -33,7 +34,9 @@ fun ImageViewerScreen(route: Route.Image, onBack: () -> Unit) {
             model = route.uriString,
             contentDescription = route.title,
             contentScale = ContentScale.Fit,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize(),
         )
     }
 }

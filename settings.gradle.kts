@@ -10,7 +10,6 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        maven { url = uri("https://jitpack.io") } // poishadow (centic9/poi-on-android)
     }
 }
 rootProject.name = "OpenFiles"
