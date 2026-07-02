@@ -18,3 +18,17 @@ data class TrashItem(
     val trashPath: String,
     val deletedAt: Long,
 )
+
+@Entity(tableName = "bookmarks")
+data class Bookmark(
+    @PrimaryKey val path: String,
+    val label: String,
+    val createdAt: Long,
+)
+
+@Entity(tableName = "locked_items")
+data class LockedFileEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val originalPath: String,
+    val encryptedFileName: String,
+)

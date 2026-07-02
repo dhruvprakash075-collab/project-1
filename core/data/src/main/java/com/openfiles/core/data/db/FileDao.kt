@@ -26,4 +26,22 @@ interface FileDao {
 
     @Delete
     suspend fun removeTrash(item: TrashItem)
+
+    @Query("SELECT * FROM bookmarks ORDER BY createdAt DESC")
+    fun bookmarks(): Flow<List<Bookmark>>
+
+    @Upsert
+    suspend fun addBookmark(bookmark: Bookmark)
+
+    @Query("DELETE FROM bookmarks WHERE path = :path")
+    suspend fun removeBookmark(path: String)
+
+    @Query("SELECT * FROM locked_items ORDER BY id DESC")
+    fun lockedItems(): Flow<List<LockedFileEntity>>
+
+    @Insert
+    suspend fun addLockedItem(item: LockedFileEntity): Long
+
+    @Delete
+    suspend fun removeLockedItem(item: LockedFileEntity)
 }

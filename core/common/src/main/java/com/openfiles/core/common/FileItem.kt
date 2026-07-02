@@ -24,6 +24,8 @@ sealed interface Route {
     data class Office(val uriString: String, val title: String, val kind: OfficeKind) : Route
     data class Text(val uriString: String, val title: String) : Route
     data class Archive(val uriString: String, val title: String) : Route
+    data object Bookmarks : Route
+    data object Locked : Route
     data object Settings : Route
     data object Trash : Route
     data object Storage : Route

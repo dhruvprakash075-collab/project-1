@@ -6,8 +6,10 @@ import androidx.lifecycle.viewModelScope
 import com.openfiles.core.common.FileItem
 import com.openfiles.core.common.UiState
 import com.openfiles.core.data.ArchiveRepository
+import com.openfiles.core.data.BookmarkRepository
 import com.openfiles.core.data.FileRepository
 import com.openfiles.core.data.RecentsRepository
+import com.openfiles.core.data.SecurityRepository
 import com.openfiles.core.data.TrashRepository
 import com.openfiles.core.data.db.TrashItem
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -15,12 +17,17 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import java.io.File
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -40,12 +47,15 @@ sealed interface BrowserEvent {
 
 private val DEFAULT_ROOT: Path = Paths.get("/storage/emulated/0")
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class BrowserViewModel @Inject constructor(
     private val repo: FileRepository,
     private val recentsRepository: RecentsRepository,
     private val trashRepository: TrashRepository,
     private val archiveRepository: ArchiveRepository,
+    private val bookmarkRepository: BookmarkRepository,
+    private val securityRepository: SecurityRepository,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
@@ -54,6 +64,11 @@ class BrowserViewModel @Inject constructor(
 
     private val _currentPath = MutableStateFlow(DEFAULT_ROOT)
     val currentPath: StateFlow<Path> = _currentPath.asStateFlow()
+
+    val isCurrentPathBookmarked: StateFlow<Boolean> = _currentPath
+        .flatMapLatest { path -> bookmarkRepository.bookmarks }
+        .flatMapLatest { list -> flowOf(list.any { it.path == _currentPath.value.toString() }) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     private val _selected = MutableStateFlow<Set<String>>(emptySet())
     val selected: StateFlow<Set<String>> = _selected.asStateFlow()
@@ -156,6 +171,15 @@ class BrowserViewModel @Inject constructor(
 
     fun recordOpened(file: FileItem) = viewModelScope.launch { recentsRepository.recordOpened(file) }
 
+    fun toggleBookmark() = viewModelScope.launch {
+        val path = _currentPath.value.toString()
+        if (isCurrentPathBookmarked.value) {
+            bookmarkRepository.removeBookmark(path)
+        } else {
+            bookmarkRepository.addBookmark(path, _currentPath.value.fileName?.toString() ?: path)
+        }
+    }
+
     private fun selectedItems(): List<FileItem> {
         val content = (_state.value as? UiState.Content)?.data ?: return emptyList()
         return content.items.filter { it.uri.toString() in _selected.value }
@@ -257,6 +281,15 @@ class BrowserViewModel @Inject constructor(
             archiveRepository.createZip(sources, destination)
         } catch (e: Exception) {
             _events.emit(BrowserEvent.ShowError(e.message ?: "Could not create zip"))
+        }
+        refresh()
+    }
+
+    fun lockSelection() = viewModelScope.launch {
+        val items = selectedItems()
+        clearSelection()
+        items.forEach { item ->
+            item.path?.let { path -> securityRepository.lockFile(File(path)) }
         }
         refresh()
     }

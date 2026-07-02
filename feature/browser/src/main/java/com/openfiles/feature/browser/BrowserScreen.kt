@@ -16,6 +16,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
@@ -25,6 +27,7 @@ import androidx.compose.material.icons.automirrored.filled.DriveFileMove
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FolderZip
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Storage
@@ -76,9 +79,15 @@ import java.nio.file.Paths
 @Composable
 fun BrowserScreen(
     modifier: Modifier = Modifier,
-    viewModel: BrowserViewModel = hiltViewModel(),
+    initialPath: String? = null,
+    viewModelKey: String? = null,
+    viewModel: BrowserViewModel = hiltViewModel(key = viewModelKey),
     onOpenRoute: (Route) -> Unit,
 ) {
+    LaunchedEffect(initialPath) {
+        initialPath?.let { viewModel.open(Paths.get(it)) }
+    }
+
     val state by viewModel.state.collectAsStateWithLifecycle()
     val selected by viewModel.selected.collectAsStateWithLifecycle()
     val clipboard by viewModel.clipboard.collectAsStateWithLifecycle()
@@ -89,6 +98,7 @@ fun BrowserScreen(
     val isSearchActive by viewModel.isSearchActive.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val currentPath by viewModel.currentPath.collectAsStateWithLifecycle()
+    val isBookmarked by viewModel.isCurrentPathBookmarked.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -120,6 +130,7 @@ fun BrowserScreen(
                     onMove = viewModel::moveSelectionToClipboard,
                     onDelete = viewModel::deleteSelection,
                     onCompress = viewModel::compressSelection,
+                    onLock = viewModel::lockSelection,
                     onRename = {
                         (state as? UiState.Content)?.data?.items
                             ?.firstOrNull { it.uri.toString() in selected }
@@ -134,6 +145,18 @@ fun BrowserScreen(
                 else -> TopAppBar(
                     title = { Text("Files") },
                     actions = {
+                        IconButton(onClick = viewModel::toggleBookmark) {
+                            Icon(
+                                if (isBookmarked) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder,
+                                contentDescription = if (isBookmarked) "Remove bookmark" else "Bookmark this folder",
+                            )
+                        }
+                        IconButton(onClick = { onOpenRoute(Route.Bookmarks) }) {
+                            Icon(Icons.Filled.Folder, contentDescription = "Bookmarks")
+                        }
+                        IconButton(onClick = { onOpenRoute(Route.Locked) }) {
+                            Icon(Icons.Filled.Lock, contentDescription = "Locked folder")
+                        }
                         IconButton(onClick = { onOpenRoute(Route.Storage) }) {
                             Icon(Icons.Filled.Storage, contentDescription = "Storage dashboard")
                         }
@@ -311,6 +334,7 @@ private fun SelectionTopBar(
     onMove: () -> Unit,
     onDelete: () -> Unit,
     onCompress: () -> Unit,
+    onLock: () -> Unit,
     onRename: () -> Unit,
 ) {
     TopAppBar(
@@ -334,6 +358,9 @@ private fun SelectionTopBar(
             }
             IconButton(onClick = onCompress) {
                 Icon(Icons.Filled.FolderZip, contentDescription = "Compress to zip")
+            }
+            IconButton(onClick = onLock) {
+                Icon(Icons.Filled.Lock, contentDescription = "Move to locked folder")
             }
             IconButton(onClick = onDelete) {
                 Icon(Icons.Filled.Delete, contentDescription = "Delete")
@@ -430,7 +457,7 @@ fun FileRow(
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(file.name, style = MaterialTheme.typography.bodyLarge)
             val subtitle = if (file.isDirectory) file.lastModified.toDisplayDate()
-            else "${file.sizeBytes.toHumanReadableSize()} · ${file.lastModified.toDisplayDate()}"
+            else "${file.sizeBytes.toHumanReadableSize()} \u00B7 ${file.lastModified.toDisplayDate()}"
             Text(subtitle, style = MaterialTheme.typography.bodySmall)
         }
     }
