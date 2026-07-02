@@ -25,7 +25,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.openfiles.core.common.Route
 import com.openfiles.core.common.UiState
@@ -38,7 +38,7 @@ import com.openfiles.core.ui.components.ErrorState
 @Composable
 fun PdfViewerScreen(
     route: Route.Pdf,
-    viewModel: PdfViewerViewModel = viewModel(),
+    viewModel: PdfViewerViewModel = hiltViewModel(),
     onBack: () -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
