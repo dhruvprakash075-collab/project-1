@@ -6,6 +6,9 @@ import androidx.documentfile.provider.DocumentFile
 import com.openfiles.core.common.FileItem
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.nio.file.Files
@@ -14,13 +17,6 @@ import java.nio.file.attribute.BasicFileAttributes
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Reads directories from two sources:
- *  - [listPath] real filesystem via Java NIO2 (requires core library desugaring on minSdk 24).
- *  - [listTree] a SAF document tree (scoped storage, no special permission needed).
- * File ops (copy/move/delete/rename/create) operate on NIO2 [Path]s, which is what "All files
- * access" mode gives us; SAF-tree mutation is intentionally out of scope for v1 (browse + open only).
- */
 @Singleton
 class FileRepository @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -77,11 +73,17 @@ class FileRepository @Inject constructor(
         items.forEach { path -> path.toFile().deleteRecursively() }
     }
 
-    suspend fun copy(items: List<Path>, destination: Path) = withContext(Dispatchers.IO) {
-        items.forEach { src -> src.toFile().copyRecursively(File(destination.toFile(), src.fileName.toString()), overwrite = true) }
-    }
+    fun copy(items: List<Path>, destination: Path): Flow<Int> = flow {
+        items.forEachIndexed { index, src ->
+            src.toFile().copyRecursively(File(destination.toFile(), src.fileName.toString()), overwrite = true)
+            emit(index + 1)
+        }
+    }.flowOn(Dispatchers.IO)
 
-    suspend fun move(items: List<Path>, destination: Path) = withContext(Dispatchers.IO) {
-        items.forEach { src -> Files.move(src, destination.resolve(src.fileName)) }
-    }
+    fun move(items: List<Path>, destination: Path): Flow<Int> = flow {
+        items.forEachIndexed { index, src ->
+            Files.move(src, destination.resolve(src.fileName))
+            emit(index + 1)
+        }
+    }.flowOn(Dispatchers.IO)
 }

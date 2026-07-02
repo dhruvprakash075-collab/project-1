@@ -11,11 +11,6 @@ import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Soft-delete: moves a file into the app's private trash directory and records the original path
- * so it can be restored. Trash is purged permanently on explicit "Empty trash" only (never a timer
- * in v1, to avoid silently deleting user data).
- */
 @Singleton
 class TrashRepository @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -25,16 +20,18 @@ class TrashRepository @Inject constructor(
 
     val trash: Flow<List<TrashItem>> get() = dao.trash()
 
-    suspend fun moveToTrash(file: File) = withContext(Dispatchers.IO) {
+    suspend fun moveToTrash(file: File): TrashItem? = withContext(Dispatchers.IO) {
         val target = File(trashDir, "${System.currentTimeMillis()}_${file.name}")
         if (file.renameTo(target)) {
-            dao.addTrash(
-                TrashItem(
-                    originalPath = file.absolutePath,
-                    trashPath = target.absolutePath,
-                    deletedAt = System.currentTimeMillis(),
-                ),
+            val item = TrashItem(
+                originalPath = file.absolutePath,
+                trashPath = target.absolutePath,
+                deletedAt = System.currentTimeMillis(),
             )
+            val id = dao.addTrash(item)
+            item.copy(id = id)
+        } else {
+            null
         }
     }
 

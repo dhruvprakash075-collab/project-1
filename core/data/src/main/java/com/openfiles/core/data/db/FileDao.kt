@@ -22,7 +22,7 @@ interface FileDao {
     fun trash(): Flow<List<TrashItem>>
 
     @Insert
-    suspend fun addTrash(item: TrashItem)
+    suspend fun addTrash(item: TrashItem): Long
 
     @Delete
     suspend fun removeTrash(item: TrashItem)
