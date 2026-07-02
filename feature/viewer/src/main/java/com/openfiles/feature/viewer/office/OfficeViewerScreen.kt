@@ -24,7 +24,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.openfiles.core.common.Route
 import com.openfiles.core.common.UiState
@@ -37,7 +37,7 @@ import com.openfiles.core.ui.components.ErrorState
 @Composable
 fun OfficeViewerScreen(
     route: Route.Office,
-    viewModel: OfficeViewerViewModel = viewModel(),
+    viewModel: OfficeViewerViewModel = hiltViewModel(),
     onBack: () -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
