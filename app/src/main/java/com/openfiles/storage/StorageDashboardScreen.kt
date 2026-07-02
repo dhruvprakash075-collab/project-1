@@ -31,7 +31,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.openfiles.core.common.UiState
 import com.openfiles.core.common.toHumanReadableSize
@@ -45,7 +45,7 @@ import com.openfiles.core.ui.components.ErrorState
 @Composable
 fun StorageDashboardScreen(
     onBack: () -> Unit,
-    viewModel: StorageDashboardViewModel = viewModel(),
+    viewModel: StorageDashboardViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
