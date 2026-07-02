@@ -157,6 +157,18 @@ fun BrowserScreen(
                                 contentDescription = if (isBookmarked) "Remove bookmark" else "Bookmark this folder",
                             )
                         }
+                        IconButton(onClick = { onOpenRoute(Route.Bookmarks) }) {
+                            Icon(Icons.Filled.Folder, contentDescription = "Bookmarks")
+                        }
+                        IconButton(onClick = { onOpenRoute(Route.Locked) }) {
+                            Icon(Icons.Filled.Lock, contentDescription = "Locked folder")
+                        }
+                        IconButton(onClick = { onOpenRoute(Route.Storage) }) {
+                            Icon(Icons.Filled.Storage, contentDescription = "Storage dashboard")
+                        }
+                        IconButton(onClick = { onOpenRoute(Route.CloudConnections) }) {
+                            Icon(Icons.Filled.Storage, contentDescription = "Cloud and network")
+                        }
                         IconButton(onClick = viewModel::activateSearch) {
                             Icon(Icons.Filled.Search, contentDescription = "Search this folder")
                         }

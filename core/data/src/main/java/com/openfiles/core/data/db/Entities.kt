@@ -32,3 +32,15 @@ data class LockedFileEntity(
     val originalPath: String,
     val encryptedFileName: String,
 )
+
+@Entity(tableName = "smb_connections")
+data class SmbConnection(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val label: String,
+    val host: String,
+    val port: Int = 445,
+    val shareName: String,
+    val username: String,
+    val domain: String? = null,
+    val encryptedPassword: String,
+)

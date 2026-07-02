@@ -19,6 +19,9 @@
 
     <!-- NOTE: NO INTERNET permission until the Ring 2 cloud feature. A local file manager
          needs no network — this is the strongest privacy proof we can offer users. -->
+    <!-- Added for Ring 2 cloud browsing (SMB). This is the first network permission the app uses. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
         android:name=".OpenFilesApp"

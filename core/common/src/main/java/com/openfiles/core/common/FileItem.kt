@@ -25,6 +25,8 @@ sealed interface Route {
     data class Text(val uriString: String, val title: String) : Route
     data class Archive(val uriString: String, val title: String) : Route
     data object Bookmarks : Route
+    data object CloudConnections : Route
+    data class CloudBrowser(val connectionId: Long, val path: String = "") : Route
     data object Locked : Route
     data object Settings : Route
     data object Trash : Route

@@ -23,6 +23,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import com.openfiles.appmanager.AppManagerScreen
 import com.openfiles.bookmarks.BookmarksScreen
+import com.openfiles.cloud.CloudBrowserScreen
+import com.openfiles.cloud.CloudConnectionsScreen
 import com.openfiles.core.common.Route
 import com.openfiles.feature.browser.BrowserScreen
 import com.openfiles.feature.gallery.GalleryScreen
@@ -102,6 +104,8 @@ fun OpenFilesNavGraph(startRoute: Route = Route.Browser()) {
             Route.Settings -> SettingsScreen(modifier = Modifier.padding(padding))
             Route.Trash -> TrashScreen(modifier = Modifier.padding(padding))
             Route.Bookmarks -> BookmarksScreen(onBack = ::pop, onOpenRoute = { backstack.add(it) })
+            Route.CloudConnections -> CloudConnectionsScreen(onBack = ::pop, onOpenRoute = { backstack.add(it) })
+            is Route.CloudBrowser -> CloudBrowserScreen(route = route, onBack = ::pop)
             Route.Locked -> LockedFolderScreen(onBack = ::pop)
             is Route.Pdf -> PdfViewerScreen(route = route, onBack = ::pop)
             is Route.Image -> ImageViewerScreen(route = route, onBack = ::pop)

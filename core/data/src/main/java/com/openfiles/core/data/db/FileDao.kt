@@ -44,4 +44,13 @@ interface FileDao {
 
     @Delete
     suspend fun removeLockedItem(item: LockedFileEntity)
+
+    @Query("SELECT * FROM smb_connections ORDER BY id DESC")
+    fun smbConnections(): Flow<List<SmbConnection>>
+
+    @Insert
+    suspend fun addSmbConnection(connection: SmbConnection): Long
+
+    @Query("DELETE FROM smb_connections WHERE id = :id")
+    suspend fun removeSmbConnection(id: Long)
 }

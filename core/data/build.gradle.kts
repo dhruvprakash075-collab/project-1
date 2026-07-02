@@ -44,6 +44,7 @@ dependencies {
     implementation(files(rootProject.file("third_party/poishadow/poishadow-all-5.2.5-4.jar")))
     implementation(libs.zip4j)
     implementation(libs.junrar)
+    implementation(libs.smbj)
 
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 

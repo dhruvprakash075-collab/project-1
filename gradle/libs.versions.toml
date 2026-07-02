@@ -16,6 +16,7 @@ coroutines = "1.11.0"
 desugar = "2.1.5"
 zip4j = "2.11.6"
 junrar = "7.6.0"
+smbj = "0.14.0"
 acra = "5.13.1"
 documentfile = "1.1.0"
 datastore = "1.2.1"
@@ -55,6 +56,7 @@ coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-androi
 desugar-jdk-libs = { module = "com.android.tools:desugar_jdk_libs_nio", version.ref = "desugar" }
 zip4j = { module = "net.lingala.zip4j:zip4j", version.ref = "zip4j" }
 junrar = { module = "com.github.junrar:junrar", version.ref = "junrar" }
+smbj = { module = "com.hierynomus:smbj", version.ref = "smbj" }
 acra-mail = { module = "ch.acra:acra-mail", version.ref = "acra" }
 acra-dialog = { module = "ch.acra:acra-dialog", version.ref = "acra" }
 androidx-documentfile = { module = "androidx.documentfile:documentfile", version.ref = "documentfile" }

@@ -17,6 +17,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.security.KeyStore
 import java.security.MessageDigest
+import android.util.Base64
 import javax.crypto.Cipher
 import javax.crypto.CipherInputStream
 import javax.crypto.CipherOutputStream
@@ -78,6 +79,27 @@ class SecurityRepository @Inject constructor(
     private fun hash(input: String): String {
         val digest = MessageDigest.getInstance("SHA-256").digest(input.toByteArray())
         return digest.joinToString("") { "%02x".format(it) }
+    }
+
+    fun encryptString(plain: String): String {
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding").apply { init(Cipher.ENCRYPT_MODE, secretKey()) }
+        val cipherText = cipher.doFinal(plain.toByteArray(Charsets.UTF_8))
+        val combined = ByteArray(1 + cipher.iv.size + cipherText.size)
+        combined[0] = cipher.iv.size.toByte()
+        System.arraycopy(cipher.iv, 0, combined, 1, cipher.iv.size)
+        System.arraycopy(cipherText, 0, combined, 1 + cipher.iv.size, cipherText.size)
+        return Base64.encodeToString(combined, Base64.NO_WRAP)
+    }
+
+    fun decryptString(encrypted: String): String {
+        val combined = Base64.decode(encrypted, Base64.NO_WRAP)
+        val ivSize = combined[0].toInt()
+        val iv = combined.copyOfRange(1, 1 + ivSize)
+        val cipherText = combined.copyOfRange(1 + ivSize, combined.size)
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding").apply {
+            init(Cipher.DECRYPT_MODE, secretKey(), GCMParameterSpec(128, iv))
+        }
+        return String(cipher.doFinal(cipherText), Charsets.UTF_8)
     }
 
     suspend fun lockFile(source: File) = withContext(Dispatchers.IO) {
