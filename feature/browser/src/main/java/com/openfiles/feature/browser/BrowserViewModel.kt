@@ -236,7 +236,10 @@ class BrowserViewModel @Inject constructor(
     }
 
     fun undoDelete(item: TrashItem) = viewModelScope.launch {
-        trashRepository.restore(item)
+        val restored = trashRepository.restore(item)
+        if (!restored) {
+            _events.emit(BrowserEvent.ShowError("Could not restore ${item.originalPath.substringAfterLast('/')}"))
+        }
         refresh()
     }
 
