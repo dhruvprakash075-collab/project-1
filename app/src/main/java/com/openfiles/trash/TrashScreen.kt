@@ -17,14 +17,14 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.openfiles.core.ui.components.EmptyState
 
 /** Soft-deleted files: restore to original location or purge permanently (no auto-expiry in v1). */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TrashScreen(modifier: Modifier = Modifier, viewModel: TrashViewModel = viewModel()) {
+fun TrashScreen(modifier: Modifier = Modifier, viewModel: TrashViewModel = hiltViewModel()) {
     val items by viewModel.items.collectAsStateWithLifecycle()
 
     Scaffold(
