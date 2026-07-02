@@ -17,7 +17,9 @@ object DataModule {
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): OpenFilesDb =
-        Room.databaseBuilder(context, OpenFilesDb::class.java, "openfiles.db").build()
+        Room.databaseBuilder(context, OpenFilesDb::class.java, "openfiles.db")
+            .fallbackToDestructiveMigration()
+            .build()
 
     @Provides
     fun provideFileDao(db: OpenFilesDb): FileDao = db.fileDao()
