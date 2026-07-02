@@ -1,0 +1,54 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- All-files access: declared ONLY because a file manager is an approved Play use case.
+         Justify with an in-app rationale + demo video in the Play Console listing. -->
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+
+    <!-- Scoped media (Android 13+) -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
+
+    <!-- NOTE: NO INTERNET permission until the Ring 2 cloud feature. A local file manager
+         needs no network — this is the strongest privacy proof we can offer users. -->
+
+    <application
+        android:name=".OpenFilesApp"
+        android:allowBackup="false"
+        android:icon="@drawable/ic_launcher"
+        android:roundIcon="@drawable/ic_launcher"
+        android:label="@string/app_name"
+        android:theme="@style/Theme.OpenFiles"
+        android:supportsRtl="true"
+        android:requestLegacyExternalStorage="false">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.OpenFiles"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- Let OpenFiles register as a viewer for common document types too. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+        </activity>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+    </application>
+</manifest>
