@@ -21,12 +21,12 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.DriveFileMove
+import androidx.compose.material.icons.automirrored.filled.DriveFileMove
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FolderZip
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
@@ -58,7 +58,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.openfiles.core.common.FileItem
 import com.openfiles.core.common.Route
@@ -76,7 +76,7 @@ import java.nio.file.Paths
 @Composable
 fun BrowserScreen(
     modifier: Modifier = Modifier,
-    viewModel: BrowserViewModel = hiltViewModel(),
+    viewModel: BrowserViewModel = viewModel(),
     onOpenRoute: (Route) -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -277,7 +277,7 @@ private fun SortMenuButton(current: SortOption, onSelect: (SortOption) -> Unit) 
     var expanded by remember { mutableStateOf(false) }
     Box {
         IconButton(onClick = { expanded = true }) {
-            Icon(Icons.Filled.Sort, contentDescription = "Sort")
+            Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = "Sort")
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             SortOption.entries.forEach { option ->
@@ -330,7 +330,7 @@ private fun SelectionTopBar(
                 Icon(Icons.Filled.ContentCopy, contentDescription = "Copy")
             }
             IconButton(onClick = onMove) {
-                Icon(Icons.Filled.DriveFileMove, contentDescription = "Move")
+                Icon(Icons.AutoMirrored.Filled.DriveFileMove, contentDescription = "Move")
             }
             IconButton(onClick = onCompress) {
                 Icon(Icons.Filled.FolderZip, contentDescription = "Compress to zip")
