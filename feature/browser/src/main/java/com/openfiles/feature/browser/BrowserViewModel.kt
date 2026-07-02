@@ -33,6 +33,8 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import javax.inject.Inject
 
+data class BrowserTab(val id: String, val path: Path)
+
 data class BrowserUiData(val currentPath: Path, val items: List<FileItem>)
 
 enum class ClipboardMode { COPY, MOVE }
@@ -94,6 +96,12 @@ class BrowserViewModel @Inject constructor(
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
+    private val _tabs = MutableStateFlow(listOf(BrowserTab(id = "tab-0", path = DEFAULT_ROOT)))
+    val tabs: StateFlow<List<BrowserTab>> = _tabs.asStateFlow()
+
+    private val _activeTabId = MutableStateFlow("tab-0")
+    val activeTabId: StateFlow<String> = _activeTabId.asStateFlow()
+
     private var rawItems: List<FileItem> = emptyList()
 
     private val _events = MutableSharedFlow<BrowserEvent>()
@@ -108,7 +116,27 @@ class BrowserViewModel @Inject constructor(
         _selected.value = emptySet()
         _searchQuery.value = ""
         _isSearchActive.value = false
+        _tabs.value = _tabs.value.map { if (it.id == _activeTabId.value) it.copy(path = dir) else it }
         loadCurrentFolder()
+    }
+
+    fun addTab() {
+        val newId = "tab-${System.currentTimeMillis()}"
+        _tabs.value = _tabs.value + BrowserTab(newId, DEFAULT_ROOT)
+        switchTab(newId)
+    }
+
+    fun switchTab(tabId: String) {
+        val tab = _tabs.value.firstOrNull { it.id == tabId } ?: return
+        _activeTabId.value = tabId
+        open(tab.path)
+    }
+
+    fun closeTab(tabId: String) {
+        if (_tabs.value.size <= 1) return
+        val closingActive = tabId == _activeTabId.value
+        _tabs.value = _tabs.value.filterNot { it.id == tabId }
+        if (closingActive) switchTab(_tabs.value.last().id)
     }
 
     fun goUp(): Boolean {

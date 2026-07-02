@@ -29,6 +29,7 @@ sealed interface Route {
     data object Settings : Route
     data object Trash : Route
     data object Storage : Route
+    data object AppManager : Route
 }
 
 enum class OfficeKind { XLSX, DOCX, PPTX }

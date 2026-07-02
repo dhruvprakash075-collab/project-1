@@ -21,6 +21,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import com.openfiles.appmanager.AppManagerScreen
 import com.openfiles.bookmarks.BookmarksScreen
 import com.openfiles.core.common.Route
 import com.openfiles.feature.browser.BrowserScreen
@@ -44,8 +45,8 @@ import com.openfiles.trash.TrashScreen
  * wired up in this version -- each pane's clipboard is independent.
  */
 @Composable
-fun OpenFilesNavGraph() {
-    val backstack = remember { mutableStateListOf<Route>(Route.Browser()) }
+fun OpenFilesNavGraph(startRoute: Route = Route.Browser()) {
+    val backstack = remember { mutableStateListOf<Route>(startRoute) }
 
     val current = backstack.last()
     val showBottomBar = current is Route.Browser || current is Route.Gallery ||
@@ -109,6 +110,7 @@ fun OpenFilesNavGraph() {
             is Route.Text -> TextViewerScreen(route = route, onBack = ::pop)
             is Route.Archive -> ArchiveViewerScreen(route = route, onBack = ::pop)
             Route.Storage -> StorageDashboardScreen(onBack = ::pop)
+            Route.AppManager -> AppManagerScreen(onBack = ::pop)
         }
     }
 }
