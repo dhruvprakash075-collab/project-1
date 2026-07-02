@@ -1,0 +1,5 @@
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="file" path="trash/" />
+    </cloud-backup>
+</data-extraction-rules>
