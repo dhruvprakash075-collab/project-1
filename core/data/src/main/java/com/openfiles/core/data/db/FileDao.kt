@@ -53,4 +53,13 @@ interface FileDao {
 
     @Query("DELETE FROM smb_connections WHERE id = :id")
     suspend fun removeSmbConnection(id: Long)
+
+    @Query("SELECT * FROM doc_annotations WHERE documentUri = :documentUri ORDER BY anchorIndex ASC")
+    fun annotationsForDocument(documentUri: String): Flow<List<DocAnnotation>>
+
+    @Insert
+    suspend fun addAnnotation(annotation: DocAnnotation): Long
+
+    @Delete
+    suspend fun removeAnnotation(annotation: DocAnnotation)
 }
