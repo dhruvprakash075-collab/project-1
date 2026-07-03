@@ -46,7 +46,7 @@ android {
     }
     kotlin { compilerOptions { jvmTarget.set(JvmTarget.JVM_17) } }
 
-    buildFeatures { compose = true }
+    buildFeatures { compose = true; aidl = true }
 
     splits {
         abi {
@@ -112,6 +112,9 @@ dependencies {
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.acra.mail)
     implementation(libs.acra.dialog)
+
+    implementation(libs.shizuku.api)
+    implementation(libs.shizuku.provider)
 
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 

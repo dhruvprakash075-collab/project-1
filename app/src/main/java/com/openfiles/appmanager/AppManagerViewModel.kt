@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.openfiles.core.common.UiState
 import com.openfiles.core.data.AppManagerRepository
 import com.openfiles.core.data.InstalledApp
+import com.openfiles.shizuku.ShizukuUninstallRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,11 +20,13 @@ import javax.inject.Inject
 sealed interface AppManagerEvent {
     data class BackupComplete(val path: String) : AppManagerEvent
     data class ShowError(val message: String) : AppManagerEvent
+    data class BulkUninstallComplete(val succeeded: Int, val failed: Int) : AppManagerEvent
 }
 
 @HiltViewModel
 class AppManagerViewModel @Inject constructor(
     private val repository: AppManagerRepository,
+    private val shizukuUninstallRepository: ShizukuUninstallRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<UiState<List<InstalledApp>>>(UiState.Loading)
@@ -31,6 +34,9 @@ class AppManagerViewModel @Inject constructor(
 
     private val _showSystemApps = MutableStateFlow(false)
     val showSystemApps: StateFlow<Boolean> = _showSystemApps.asStateFlow()
+
+    private val _selected = MutableStateFlow<Set<String>>(emptySet())
+    val selected: StateFlow<Set<String>> = _selected.asStateFlow()
 
     private val _events = MutableSharedFlow<AppManagerEvent>()
     val events: SharedFlow<AppManagerEvent> = _events.asSharedFlow()
@@ -58,5 +64,31 @@ class AppManagerViewModel @Inject constructor(
         } else {
             _events.emit(AppManagerEvent.ShowError("Could not back up ${app.label}"))
         }
+    }
+
+    fun toggleSelected(packageName: String) {
+        _selected.value = if (packageName in _selected.value) {
+            _selected.value - packageName
+        } else {
+            _selected.value + packageName
+        }
+    }
+
+    fun clearSelection() {
+        _selected.value = emptySet()
+    }
+
+    fun bulkUninstallSelected() = viewModelScope.launch {
+        val targets = _selected.value.toList()
+        if (targets.isEmpty()) return@launch
+        val results = shizukuUninstallRepository.uninstallPackages(targets)
+        _selected.value = emptySet()
+        load()
+        _events.emit(
+            AppManagerEvent.BulkUninstallComplete(
+                succeeded = results.count { it.value },
+                failed = results.count { !it.value },
+            ),
+        )
     }
 }
