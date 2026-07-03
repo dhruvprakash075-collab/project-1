@@ -44,3 +44,14 @@ data class SmbConnection(
     val domain: String? = null,
     val encryptedPassword: String,
 )
+
+/** Ring 3, F3: a lightweight text note anchored to a paragraph (Word), slide (PPTX), or row+sheet (Excel). */
+@Entity(tableName = "doc_annotations")
+data class DocAnnotation(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val documentUri: String,
+    val anchorIndex: Int,
+    val sheetName: String? = null,
+    val note: String,
+    val createdAt: Long,
+)
