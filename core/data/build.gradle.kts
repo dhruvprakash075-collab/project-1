@@ -50,6 +50,10 @@ dependencies {
     implementation(libs.smbj)
     implementation(libs.jna)
 
+    implementation(libs.mlkit.genai.image.description)
+    implementation(libs.mlkit.genai.summarization)
+    implementation(libs.coroutines.guava)
+
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 
     testImplementation(libs.junit)
