@@ -52,7 +52,7 @@ dependencies {
 
     implementation(libs.mlkit.genai.image.description)
     implementation(libs.mlkit.genai.summarization)
-    implementation(libs.coroutines.play.services)
+    implementation(libs.coroutines.guava)
 
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 

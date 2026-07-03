@@ -74,7 +74,7 @@ jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
 espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "espresso" }
 mlkit-genai-image-description = { module = "com.google.mlkit:genai-image-description", version.ref = "mlkitGenaiImageDescription" }
 mlkit-genai-summarization = { module = "com.google.mlkit:genai-summarization", version.ref = "mlkitGenaiSummarization" }
-coroutines-play-services = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services", version.ref = "coroutines" }
+coroutines-guava = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-guava", version.ref = "coroutines" }
 compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
 compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
 room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
