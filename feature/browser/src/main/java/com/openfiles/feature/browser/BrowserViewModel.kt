@@ -1,6 +1,7 @@
 package com.openfiles.feature.browser
 
 import android.content.Context
+import android.os.Environment
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.openfiles.core.common.FileItem
@@ -50,8 +51,6 @@ sealed interface BrowserEvent {
     data object RequestLegacyStoragePermission : BrowserEvent
 }
 
-private val DEFAULT_ROOT: Path = Paths.get("/storage/emulated/0")
-
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class BrowserViewModel @Inject constructor(
@@ -63,11 +62,13 @@ class BrowserViewModel @Inject constructor(
     private val securityRepository: SecurityRepository,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
+    private val storageRoots: List<Path> = deriveStorageRoots(context)
+    private val defaultRoot: Path = storageRoots.firstOrNull() ?: Paths.get("/")
 
     private val _state = MutableStateFlow<UiState<BrowserUiData>>(UiState.Loading)
     val state: StateFlow<UiState<BrowserUiData>> = _state.asStateFlow()
 
-    private val _currentPath = MutableStateFlow(DEFAULT_ROOT)
+    private val _currentPath = MutableStateFlow(defaultRoot)
     val currentPath: StateFlow<Path> = _currentPath.asStateFlow()
 
     val isCurrentPathBookmarked: StateFlow<Boolean> = _currentPath
@@ -99,7 +100,7 @@ class BrowserViewModel @Inject constructor(
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-    private val _tabs = MutableStateFlow(listOf(BrowserTab(id = "tab-0", path = DEFAULT_ROOT)))
+    private val _tabs = MutableStateFlow(listOf(BrowserTab(id = "tab-0", path = defaultRoot)))
     val tabs: StateFlow<List<BrowserTab>> = _tabs.asStateFlow()
 
     private val _activeTabId = MutableStateFlow("tab-0")
@@ -111,7 +112,7 @@ class BrowserViewModel @Inject constructor(
     val events: SharedFlow<BrowserEvent> = _events.asSharedFlow()
 
     init {
-        open(DEFAULT_ROOT)
+        open(defaultRoot)
     }
 
     fun open(dir: Path) {
@@ -125,7 +126,7 @@ class BrowserViewModel @Inject constructor(
 
     fun addTab() {
         val newId = "tab-${System.currentTimeMillis()}"
-        _tabs.value = _tabs.value + BrowserTab(newId, DEFAULT_ROOT)
+        _tabs.value = _tabs.value + BrowserTab(newId, defaultRoot)
         switchTab(newId)
     }
 
@@ -341,5 +342,20 @@ class BrowserViewModel @Inject constructor(
             item.path?.let { path -> securityRepository.lockFile(File(path)) }
         }
         refresh()
+    }
+
+    private fun deriveStorageRoots(context: Context): List<Path> {
+        val roots = linkedSetOf<File>()
+        Environment.getExternalStorageDirectory()?.let { roots += it }
+        context.getExternalFilesDirs(null).forEach { appDir ->
+            val path = appDir?.absolutePath ?: return@forEach
+            val androidData = path.indexOf("${File.separator}Android${File.separator}data")
+            if (androidData > 0) roots += File(path.substring(0, androidData))
+        }
+        roots += File("/storage").listFiles().orEmpty().filter { it.canRead() && it.name != "self" && it.name != "emulated" }
+        return roots
+            .map { it.toPath().normalize() }
+            .distinct()
+            .filter { it.toFile().exists() }
     }
 }

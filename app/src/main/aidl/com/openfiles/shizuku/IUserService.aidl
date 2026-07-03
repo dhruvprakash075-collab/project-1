@@ -1,8 +1,8 @@
 package com.openfiles.shizuku;
 
 interface IUserService {
-    /** Runs `pm uninstall <packageName>` in the Shizuku-granted process. Returns the process exit code (0 = success). */
-    int uninstallPackage(String packageName);
+    /** Runs `pm uninstall <packageName>` and returns exit code plus command output. */
+    String uninstallPackage(String packageName);
 
     void destroy();
 }

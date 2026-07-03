@@ -24,12 +24,20 @@ class AiTaggingRepository @Inject constructor(@ApplicationContext private val co
     suspend fun describeImage(bitmap: Bitmap): String {
         val describer = ImageDescription.getClient(ImageDescriberOptions.builder(context).build())
         val request = ImageDescriptionRequest.builder(bitmap).build()
-        return describer.runInference(request).await().description
+        return try {
+            describer.runInference(request).await().description
+        } finally {
+            describer.close()
+        }
     }
 
     suspend fun summarize(text: String): String {
         val summarizer = Summarization.getClient(SummarizerOptions.builder(context).build())
         val request = SummarizationRequest.builder(text).build()
-        return summarizer.runInference(request).await().summary
+        return try {
+            summarizer.runInference(request).await().summary
+        } finally {
+            summarizer.close()
+        }
     }
 }

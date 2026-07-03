@@ -13,13 +13,15 @@ import android.os.Process
  */
 class UserService : IUserService.Stub() {
 
-    override fun uninstallPackage(packageName: String): Int = try {
-        ProcessBuilder("pm", "uninstall", packageName)
+    override fun uninstallPackage(packageName: String): String = try {
+        val process = ProcessBuilder("pm", "uninstall", packageName)
             .redirectErrorStream(true)
             .start()
-            .waitFor()
+        val output = process.inputStream.bufferedReader().use { it.readText() }.trim()
+        val exitCode = process.waitFor()
+        "exitCode=$exitCode\n$output"
     } catch (e: Exception) {
-        -1
+        "exitCode=-1\n${e.message.orEmpty()}"
     }
 
     override fun destroy() {

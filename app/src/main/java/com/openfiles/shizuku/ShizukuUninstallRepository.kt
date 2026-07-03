@@ -18,6 +18,13 @@ import javax.inject.Singleton
 @Singleton
 class ShizukuUninstallRepository @Inject constructor(@ApplicationContext private val context: Context) {
     private var binder: IUserService? = null
+    private val args by lazy {
+        Shizuku.UserServiceArgs(ComponentName(context.packageName, UserService::class.java.name))
+            .daemon(false)
+            .processNameSuffix("shizuku")
+            .debuggable(false)
+            .version(1)
+    }
 
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName, service: IBinder) {
@@ -31,28 +38,35 @@ class ShizukuUninstallRepository @Inject constructor(@ApplicationContext private
 
     private fun ensureBound() {
         if (binder != null) return
-        val args = Shizuku.UserServiceArgs(ComponentName(context.packageName, UserService::class.java.name))
-            .daemon(false)
-            .processNameSuffix("shizuku")
-            .debuggable(false)
-            .version(1)
         Shizuku.bindUserService(args, connection)
     }
 
+    private fun unbind() {
+        runCatching { binder?.destroy() }
+        runCatching { Shizuku.unbindUserService(args, connection, true) }
+        binder = null
+    }
+
     suspend fun uninstallPackages(packageNames: List<String>): Map<String, Boolean> {
-        ensureBound()
-        var attempts = 0
-        while (binder == null && attempts < 50) {
-            delay(100)
-            attempts++
-        }
-        val service = binder ?: return packageNames.associateWith { false }
-        return packageNames.associateWith { pkg ->
-            try {
-                service.uninstallPackage(pkg) == 0
-            } catch (e: Exception) {
-                false
+        try {
+            ensureBound()
+            var attempts = 0
+            while (binder == null && attempts < 50) {
+                delay(100)
+                attempts++
             }
+            val service = binder ?: return packageNames.associateWith { false }
+            return packageNames.associateWith { pkg ->
+                try {
+                    val result = service.uninstallPackage(pkg)
+                    result.lineSequence().firstOrNull()?.trim() == "exitCode=0" &&
+                        result.lineSequence().drop(1).joinToString("\n").contains("Success", ignoreCase = true)
+                } catch (e: Exception) {
+                    false
+                }
+            }
+        } finally {
+            unbind()
         }
     }
 }

@@ -24,12 +24,20 @@ class AiAvailability @Inject constructor(@ApplicationContext private val context
 
     suspend fun imageDescriptionState(): AiFeatureState {
         val client = ImageDescription.getClient(ImageDescriberOptions.builder(context).build())
-        return client.checkFeatureStatus().await().toAiFeatureState()
+        return try {
+            client.checkFeatureStatus().await().toAiFeatureState()
+        } finally {
+            client.close()
+        }
     }
 
     suspend fun summarizationState(): AiFeatureState {
         val client = Summarization.getClient(SummarizerOptions.builder(context).build())
-        return client.checkFeatureStatus().await().toAiFeatureState()
+        return try {
+            client.checkFeatureStatus().await().toAiFeatureState()
+        } finally {
+            client.close()
+        }
     }
 
     private fun Int.toAiFeatureState(): AiFeatureState = when (this) {
