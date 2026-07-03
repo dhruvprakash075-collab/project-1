@@ -24,6 +24,8 @@ class SmbRepository @Inject constructor(
     private val dao: FileDao,
     private val securityRepository: SecurityRepository,
 ) {
+    private val client by lazy { SMBClient() }
+
     val connections: Flow<List<SmbConnection>> = dao.smbConnections()
 
     suspend fun addConnection(label: String, host: String, shareName: String, username: String, password: String, domain: String? = null, port: Int = 445) =
@@ -52,7 +54,7 @@ class SmbRepository @Inject constructor(
                         name = entry.fileName,
                         isDirectory = (entry.fileAttributes and FileAttributes.FILE_ATTRIBUTE_DIRECTORY.value) != 0L,
                         sizeBytes = entry.endOfFile,
-                        lastModified = 0L,
+                        lastModified = entry.lastWriteTime.toEpochMillis(),
                     )
                 }
             }
@@ -78,7 +80,6 @@ class SmbRepository @Inject constructor(
     }
 
     private fun <T> withShare(connection: SmbConnection, block: (DiskShare) -> T): T {
-        val client = SMBClient()
         client.connect(connection.host, connection.port).use { conn ->
             val password = securityRepository.decryptString(connection.encryptedPassword)
             val auth = AuthenticationContext(connection.username, password.toCharArray(), connection.domain)

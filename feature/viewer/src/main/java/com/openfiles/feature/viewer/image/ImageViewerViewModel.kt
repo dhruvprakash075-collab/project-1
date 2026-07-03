@@ -5,7 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.openfiles.core.data.ImageEditOp
 import com.openfiles.core.data.ImageEditRepository
+import com.openfiles.core.data.ImageEditResult
 import dagger.hilt.android.lifecycle.HiltViewModel
+import android.content.IntentSender
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -17,6 +19,7 @@ import javax.inject.Inject
 
 sealed interface ImageEditEvent {
     data object Saved : ImageEditEvent
+    data class RequestWriteAccess(val intentSender: IntentSender) : ImageEditEvent
     data class ShowError(val message: String) : ImageEditEvent
 }
 
@@ -36,14 +39,24 @@ class ImageViewerViewModel @Inject constructor(
     val events: SharedFlow<ImageEditEvent> = _events.asSharedFlow()
 
     fun edit(uriString: String, op: ImageEditOp) = viewModelScope.launch {
+        applyEdit(uriString, op)
+    }
+
+    fun retryAfterWriteGrant(uriString: String, op: ImageEditOp) = viewModelScope.launch {
+        applyEdit(uriString, op)
+    }
+
+    private suspend fun applyEdit(uriString: String, op: ImageEditOp) {
         _isSaving.value = true
-        val success = repository.apply(Uri.parse(uriString), op)
+        val result = repository.apply(Uri.parse(uriString), op)
         _isSaving.value = false
-        if (success) {
-            _reloadKey.value += 1
-            _events.emit(ImageEditEvent.Saved)
-        } else {
-            _events.emit(ImageEditEvent.ShowError("Could not save changes"))
+        when (result) {
+            ImageEditResult.Saved -> {
+                _reloadKey.value += 1
+                _events.emit(ImageEditEvent.Saved)
+            }
+            is ImageEditResult.NeedsWritePermission -> _events.emit(ImageEditEvent.RequestWriteAccess(result.intentSender))
+            ImageEditResult.Failed -> _events.emit(ImageEditEvent.ShowError("Could not save changes"))
         }
     }
 }

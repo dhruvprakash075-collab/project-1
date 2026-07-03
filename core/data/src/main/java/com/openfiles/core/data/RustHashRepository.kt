@@ -33,7 +33,7 @@ class RustHashRepository @Inject constructor() {
         if (nativeAvailable) {
             try {
                 return@withContext uniffi.rustcore.hashFile(path)
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 Log.w(TAG, "Native hash_file failed for $path, falling back to Kotlin SHA-256", e)
             }
         }

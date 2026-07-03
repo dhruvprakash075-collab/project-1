@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.IOException
 import javax.inject.Inject
 
 @HiltViewModel
@@ -30,9 +31,18 @@ class TextViewerViewModel @Inject constructor(
             _state.value = UiState.Loading
             _state.value = try {
                 val text = withContext(Dispatchers.IO) {
-                    context.contentResolver.openInputStream(android.net.Uri.parse(uriString))!!.use { input ->
-                        val bytes = input.readBytes().take(maxBytes).toByteArray()
-                        String(bytes, Charsets.UTF_8)
+                    val uri = android.net.Uri.parse(uriString)
+                    val input = context.contentResolver.openInputStream(uri)
+                        ?: throw IOException("Can't open file: $uri")
+                    input.use { stream ->
+                        val buffer = ByteArray(maxBytes)
+                        var read = 0
+                        while (read < maxBytes) {
+                            val n = stream.read(buffer, read, maxBytes - read)
+                            if (n < 0) break
+                            read += n
+                        }
+                        String(buffer, 0, read, Charsets.UTF_8)
                     }
                 }
                 if (text.isEmpty()) UiState.Empty else UiState.Content(text)

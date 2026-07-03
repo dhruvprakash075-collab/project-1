@@ -2,6 +2,7 @@ package com.openfiles.feature.viewer.office
 
 import android.content.Intent
 import android.net.Uri
+import androidx.core.content.FileProvider
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
@@ -53,6 +55,7 @@ import com.openfiles.core.data.db.DocAnnotation
 import com.openfiles.core.ui.components.CenteredProgress
 import com.openfiles.core.ui.components.EmptyState
 import com.openfiles.core.ui.components.ErrorState
+import java.io.File
 import kotlinx.coroutines.launch
 
 /** Read-only viewer for .xlsx (grid), .docx (paragraphs), .pptx (per-slide text) via Apache POI. */
@@ -79,12 +82,14 @@ fun OfficeViewerScreen(
         viewModel.events.collect { event ->
             when (event) {
                 is OfficeEvent.RequestExternalViewer -> {
+                    val uri = externalViewerUri(context, event.uriString)
                     val intent = Intent(Intent.ACTION_VIEW).apply {
                         setDataAndType(
-                            Uri.parse(event.uriString),
+                            uri,
                             "application/vnd.openxmlformats-officedocument.presentationml.presentation",
                         )
                         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     }
                     context.startActivity(Intent.createChooser(intent, "Open with"))
                 }
@@ -137,10 +142,23 @@ fun OfficeViewerScreen(
                 modifier = Modifier.padding(padding),
                 listState = listState,
                 annotations = annotations,
-                onAddAnnotation = { anchorIndex, note -> viewModel.addAnnotation(anchorIndex, note) },
+                onAddAnnotation = { anchorIndex, note, sheetName -> viewModel.addAnnotation(anchorIndex, note, sheetName) },
                 onRemoveAnnotation = viewModel::removeAnnotation,
             )
         }
+    }
+}
+
+private fun externalViewerUri(context: android.content.Context, uriString: String): Uri {
+    val uri = Uri.parse(uriString)
+    return if (uri.scheme == "file") {
+        FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            File(requireNotNull(uri.path)),
+        )
+    } else {
+        uri
     }
 }
 
@@ -194,7 +212,7 @@ private fun OfficeContentView(
     modifier: Modifier,
     listState: LazyListState,
     annotations: List<DocAnnotation>,
-    onAddAnnotation: (anchorIndex: Int, note: String) -> Unit,
+    onAddAnnotation: (anchorIndex: Int, note: String, sheetName: String?) -> Unit,
     onRemoveAnnotation: (DocAnnotation) -> Unit,
 ) {
     when (content) {
@@ -205,15 +223,22 @@ private fun OfficeContentView(
                 WordParagraphRow(
                     text = paragraph,
                     note = noteForParagraph,
-                    onAddNote = { note -> onAddAnnotation(index, note) },
+                    onAddNote = { note -> onAddAnnotation(index, note, null) },
                     onRemoveNote = { noteForParagraph?.let(onRemoveAnnotation) },
                 )
             }
         }
         is OfficeContent.Slides -> LazyColumn(state = listState, modifier = modifier.fillMaxSize().padding(16.dp)) {
             items(content.slides, key = { it.index }) { slide ->
+                val sheetName = "Slide ${slide.index + 1}"
+                val noteForSlide = annotations.firstOrNull { it.anchorIndex == slide.index && it.sheetName == sheetName }
                 Text("Slide ${slide.index + 1}", style = MaterialTheme.typography.titleMedium)
                 slide.textBlocks.forEach { Text(it, modifier = Modifier.padding(vertical = 2.dp)) }
+                NoteButtonRow(
+                    note = noteForSlide,
+                    onAddNote = { note -> onAddAnnotation(slide.index, note, sheetName) },
+                    onRemoveNote = { noteForSlide?.let(onRemoveAnnotation) },
+                )
                 HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
             }
         }
@@ -222,15 +247,53 @@ private fun OfficeContentView(
                 item {
                     Text(sheet.name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(16.dp))
                 }
-                items(sheet.rows) { row ->
+                itemsIndexed(sheet.rows) { rowIndex, row ->
+                    val noteForRow = annotations.firstOrNull { it.anchorIndex == rowIndex && it.sheetName == sheet.name }
                     Row(modifier = Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp)) {
                         row.forEach { cell ->
                             Text(cell, modifier = Modifier.padding(end = 16.dp))
                         }
+                        NoteButtonRow(
+                            note = noteForRow,
+                            onAddNote = { note -> onAddAnnotation(rowIndex, note, sheet.name) },
+                            onRemoveNote = { noteForRow?.let(onRemoveAnnotation) },
+                        )
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun NoteButtonRow(
+    note: DocAnnotation?,
+    onAddNote: (String) -> Unit,
+    onRemoveNote: () -> Unit,
+) {
+    var showDialog by remember { mutableStateOf(false) }
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+        if (note != null) {
+            Card(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+                Row(modifier = Modifier.padding(8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(note.note, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                    TextButton(onClick = onRemoveNote) { Text("Remove") }
+                }
+            }
+        }
+        IconButton(onClick = { showDialog = true }) {
+            Icon(Icons.Filled.NoteAdd, contentDescription = "Add note")
+        }
+    }
+    if (showDialog) {
+        NoteDialog(
+            initialValue = note?.note.orEmpty(),
+            onDismiss = { showDialog = false },
+            onSave = { draft ->
+                onAddNote(draft)
+                showDialog = false
+            },
+        )
     }
 }
 
@@ -259,22 +322,31 @@ private fun WordParagraphRow(
         }
     }
     if (showDialog) {
-        var draft by remember { mutableStateOf(note?.note.orEmpty()) }
-        AlertDialog(
-            onDismissRequest = { showDialog = false },
-            title = { Text("Note") },
-            text = {
-                OutlinedTextField(value = draft, onValueChange = { draft = it }, modifier = Modifier.fillMaxWidth())
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    onAddNote(draft)
-                    showDialog = false
-                }) { Text("Save") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDialog = false }) { Text("Cancel") }
+        NoteDialog(
+            initialValue = note?.note.orEmpty(),
+            onDismiss = { showDialog = false },
+            onSave = { draft ->
+                onAddNote(draft)
+                showDialog = false
             },
         )
     }
+}
+
+@Composable
+private fun NoteDialog(initialValue: String, onDismiss: () -> Unit, onSave: (String) -> Unit) {
+    var draft by remember { mutableStateOf(initialValue) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Note") },
+        text = {
+            OutlinedTextField(value = draft, onValueChange = { draft = it }, modifier = Modifier.fillMaxWidth())
+        },
+        confirmButton = {
+            TextButton(onClick = { onSave(draft) }) { Text("Save") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
 }

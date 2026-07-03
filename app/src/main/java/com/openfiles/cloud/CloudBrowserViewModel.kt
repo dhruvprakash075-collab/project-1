@@ -39,6 +39,7 @@ class CloudBrowserViewModel @Inject constructor(
     private val _events = MutableSharedFlow<CloudBrowserEvent>()
     val events: SharedFlow<CloudBrowserEvent> = _events.asSharedFlow()
     private var started = false
+    private val tempFiles = mutableListOf<File>()
 
     fun start(connectionId: Long, initialPath: String) {
         if (started) return
@@ -69,6 +70,7 @@ class CloudBrowserViewModel @Inject constructor(
         val remotePath = if (_path.value.isBlank()) item.name else "${_path.value}\\${item.name}"
         repository.download(connection, remotePath, cacheFile)
             .onSuccess { file ->
+                tempFiles += file
                 val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
                 val intent = Intent(Intent.ACTION_VIEW).apply {
                     setDataAndType(uri, context.contentResolver.getType(uri) ?: "*/*")
@@ -77,5 +79,11 @@ class CloudBrowserViewModel @Inject constructor(
                 _events.emit(CloudBrowserEvent.OpenFile(Intent.createChooser(intent, null)))
             }
             .onFailure { e -> _events.emit(CloudBrowserEvent.ShowError(e.message ?: "Could not download ${item.name}")) }
+    }
+
+    override fun onCleared() {
+        tempFiles.forEach { it.delete() }
+        tempFiles.clear()
+        super.onCleared()
     }
 }

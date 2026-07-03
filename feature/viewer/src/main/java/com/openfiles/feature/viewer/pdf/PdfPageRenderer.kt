@@ -7,13 +7,15 @@ import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import android.os.ParcelFileDescriptor
 import java.io.Closeable
+import java.io.IOException
 
 /**
  * Native PdfRenderer wrapper (zero third-party deps, API 21+). Renders ONE page at a time so
  * memory use never scales with document length — the core lesson from the plan's PDF section.
  */
 class PdfPageRenderer(context: Context, uri: Uri) : Closeable {
-    private val pfd: ParcelFileDescriptor = context.contentResolver.openFileDescriptor(uri, "r")!!
+    private val pfd: ParcelFileDescriptor = context.contentResolver.openFileDescriptor(uri, "r")
+        ?: throw IOException("Can't open file: $uri")
     private val renderer = PdfRenderer(pfd)
 
     val pageCount: Int get() = renderer.pageCount
