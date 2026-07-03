@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.IOException
 import javax.inject.Inject
 
 @HiltViewModel
@@ -60,9 +61,16 @@ class ArchiveViewerViewModel @Inject constructor(
 
     private fun copyToCache(uri: Uri, name: String): File {
         val out = File(context.cacheDir, "archive_$name")
-        context.contentResolver.openInputStream(uri)!!.use { input ->
+        val input = context.contentResolver.openInputStream(uri)
+            ?: throw IOException("Can't open file: $uri")
+        input.use { input ->
             out.outputStream().use { output -> input.copyTo(output) }
         }
         return out
+    }
+
+    override fun onCleared() {
+        localCopy?.delete()
+        super.onCleared()
     }
 }

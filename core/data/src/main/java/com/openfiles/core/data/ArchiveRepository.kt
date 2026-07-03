@@ -80,6 +80,10 @@ class ArchiveRepository @Inject constructor(
             var entry = it.getNextEntry()
             while (entry != null) {
                 val outFile = File(destination, entry.name)
+                val destDir = destination.canonicalFile.toPath()
+                if (!outFile.canonicalFile.toPath().startsWith(destDir)) {
+                    throw SecurityException("Blocked archive entry outside target: ${entry.name}")
+                }
                 if (entry.isDirectory) {
                     outFile.mkdirs()
                 } else {

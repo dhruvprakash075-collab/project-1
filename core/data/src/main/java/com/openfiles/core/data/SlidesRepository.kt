@@ -7,6 +7,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.apache.poi.xslf.usermodel.XMLSlideShow
 import org.apache.poi.xslf.usermodel.XSLFTextShape
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -18,7 +19,9 @@ class SlidesRepository @Inject constructor(
     data class Slide(val index: Int, val textBlocks: List<String>)
 
     suspend fun readSlides(uri: Uri): List<Slide> = withContext(Dispatchers.IO) {
-        context.contentResolver.openInputStream(uri)!!.use { input ->
+        val input = context.contentResolver.openInputStream(uri)
+            ?: throw IOException("Can't open file: $uri")
+        input.use { input ->
             XMLSlideShow(input).use { ppt ->
                 ppt.slides.mapIndexed { i, slide ->
                     val texts = slide.shapes.filterIsInstance<XSLFTextShape>().map { it.text }

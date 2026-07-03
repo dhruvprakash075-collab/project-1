@@ -1,5 +1,9 @@
 package com.openfiles.feature.viewer.image
 
+import android.app.Activity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -21,6 +25,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -45,11 +51,27 @@ fun ImageViewerScreen(route: Route.Image, onBack: () -> Unit, viewModel: ImageVi
     val reloadKey by viewModel.reloadKey.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
+    var pendingEdit by remember { mutableStateOf<ImageEditOp?>(null) }
+    val writeAccessLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartIntentSenderForResult(),
+    ) { result ->
+        val op = pendingEdit
+        pendingEdit = null
+        if (result.resultCode == Activity.RESULT_OK && op != null) {
+            viewModel.retryAfterWriteGrant(route.uriString, op)
+        }
+    }
 
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
             when (event) {
                 ImageEditEvent.Saved -> snackbarHostState.showSnackbar("Saved")
+                is ImageEditEvent.RequestWriteAccess -> {
+                    val op = pendingEdit
+                    if (op != null) {
+                        writeAccessLauncher.launch(IntentSenderRequest.Builder(event.intentSender).build())
+                    }
+                }
                 is ImageEditEvent.ShowError -> snackbarHostState.showSnackbar(event.message)
             }
         }
@@ -67,13 +89,13 @@ fun ImageViewerScreen(route: Route.Image, onBack: () -> Unit, viewModel: ImageVi
         },
         bottomBar = {
             BottomAppBar {
-                IconButton(onClick = { viewModel.edit(route.uriString, ImageEditOp.ROTATE_LEFT) }, enabled = !isSaving) {
+                IconButton(onClick = { pendingEdit = ImageEditOp.ROTATE_LEFT; viewModel.edit(route.uriString, ImageEditOp.ROTATE_LEFT) }, enabled = !isSaving) {
                     Icon(Icons.AutoMirrored.Filled.RotateLeft, contentDescription = "Rotate left")
                 }
-                IconButton(onClick = { viewModel.edit(route.uriString, ImageEditOp.ROTATE_RIGHT) }, enabled = !isSaving) {
+                IconButton(onClick = { pendingEdit = ImageEditOp.ROTATE_RIGHT; viewModel.edit(route.uriString, ImageEditOp.ROTATE_RIGHT) }, enabled = !isSaving) {
                     Icon(Icons.AutoMirrored.Filled.RotateRight, contentDescription = "Rotate right")
                 }
-                IconButton(onClick = { viewModel.edit(route.uriString, ImageEditOp.GRAYSCALE) }, enabled = !isSaving) {
+                IconButton(onClick = { pendingEdit = ImageEditOp.GRAYSCALE; viewModel.edit(route.uriString, ImageEditOp.GRAYSCALE) }, enabled = !isSaving) {
                     Icon(Icons.Filled.Contrast, contentDescription = "Grayscale filter")
                 }
                 if (isSaving) CircularProgressIndicator(modifier = Modifier.padding(8.dp))

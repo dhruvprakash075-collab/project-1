@@ -7,6 +7,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.apache.poi.ss.usermodel.DataFormatter
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -18,7 +19,9 @@ class ExcelRepository @Inject constructor(
     data class Sheet(val name: String, val rows: List<List<String>>)
 
     suspend fun readWorkbook(uri: Uri): List<Sheet> = withContext(Dispatchers.IO) {
-        context.contentResolver.openInputStream(uri)!!.use { input ->
+        val input = context.contentResolver.openInputStream(uri)
+            ?: throw IOException("Can't open file: $uri")
+        input.use { input ->
             XSSFWorkbook(input).use { wb ->
                 val fmt = DataFormatter()
                 (0 until wb.numberOfSheets).map { s ->

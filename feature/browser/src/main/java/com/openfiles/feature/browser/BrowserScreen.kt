@@ -33,6 +33,9 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
@@ -76,6 +79,7 @@ import com.openfiles.core.ui.FileOpener
 import com.openfiles.core.ui.components.CenteredProgress
 import com.openfiles.core.ui.components.EmptyState
 import com.openfiles.core.ui.components.ErrorState
+import com.openfiles.core.ui.permissions.StoragePermissions
 import java.nio.file.Path
 import java.nio.file.Paths
 
@@ -107,6 +111,13 @@ fun BrowserScreen(
     val activeTabId by viewModel.activeTabId.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
+    val legacyStorageLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions(),
+    ) { viewModel.refresh() }
+
+    BackHandler(enabled = viewModel.canNavigateUp()) {
+        viewModel.goUp()
+    }
 
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
@@ -120,6 +131,10 @@ fun BrowserScreen(
                     if (result == SnackbarResult.ActionPerformed) viewModel.undoDelete(event.item)
                 }
                 is BrowserEvent.ShowError -> snackbarHostState.showSnackbar(event.message)
+                BrowserEvent.RequestStoragePermission -> StoragePermissions.requestAllFiles(context)
+                BrowserEvent.RequestLegacyStoragePermission -> {
+                    legacyStorageLauncher.launch(StoragePermissions.legacyReadPermissions())
+                }
             }
         }
     }

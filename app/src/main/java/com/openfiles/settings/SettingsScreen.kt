@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.openfiles.core.data.ThemePref
+import androidx.compose.ui.unit.dp
 
 /** Settings: theme (Light/Dark/True Black/System), hidden files toggle, default view mode. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -30,7 +31,7 @@ fun SettingsScreen(modifier: Modifier = Modifier, viewModel: SettingsViewModel =
         topBar = { TopAppBar(title = { Text("Settings") }) },
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
-            Text("Theme", modifier = Modifier.padding(16.dp()))
+            Text("Theme", modifier = Modifier.padding(16.dp))
             ThemePref.entries.forEach { theme ->
                 ListItem(
                     headlineContent = { Text(theme.name) },
@@ -56,5 +57,3 @@ fun SettingsScreen(modifier: Modifier = Modifier, viewModel: SettingsViewModel =
         }
     }
 }
-
-private fun Int.dp() = androidx.compose.ui.unit.Dp(this.toFloat())

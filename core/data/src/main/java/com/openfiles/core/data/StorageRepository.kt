@@ -3,6 +3,7 @@ package com.openfiles.core.data
 import android.content.Context
 import android.os.Environment
 import android.os.StatFs
+import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -56,8 +57,10 @@ class StorageRepository @Inject constructor(
                     return FileVisitResult.CONTINUE
                 }
 
-                override fun visitFileFailed(file: Path, exc: IOException): FileVisitResult =
-                    FileVisitResult.CONTINUE
+                override fun visitFileFailed(file: Path, exc: IOException): FileVisitResult {
+                    Log.w(TAG, "Skipping unreadable path while summarizing storage: $file", exc)
+                    return FileVisitResult.CONTINUE
+                }
             })
         }
 
@@ -85,5 +88,9 @@ class StorageRepository @Inject constructor(
             "apk" -> StorageCategory.APPS
             else -> StorageCategory.OTHER
         }
+    }
+
+    private companion object {
+        const val TAG = "StorageRepository"
     }
 }

@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
@@ -26,6 +28,7 @@ class PdfViewerViewModel @Inject constructor(
     val state: StateFlow<UiState<PdfUiData>> = _state.asStateFlow()
 
     private val pageCache = mutableMapOf<Int, Bitmap>()
+    private val renderMutex = Mutex()
     private var renderer: PdfPageRenderer? = null
 
     fun open(uriString: String) {
@@ -43,9 +46,11 @@ class PdfViewerViewModel @Inject constructor(
         }
     }
 
-    suspend fun pageBitmap(index: Int, targetWidth: Int): Bitmap? = withContext(Dispatchers.Default) {
-        pageCache.getOrPut(index) {
-            renderer?.renderPage(index, targetWidth) ?: return@withContext null
+    suspend fun pageBitmap(index: Int, targetWidth: Int): Bitmap? = renderMutex.withLock {
+        withContext(Dispatchers.Default) {
+            pageCache.getOrPut(index) {
+                renderer?.renderPage(index, targetWidth) ?: return@withContext null
+            }
         }
     }
 

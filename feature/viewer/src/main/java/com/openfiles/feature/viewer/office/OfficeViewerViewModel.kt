@@ -132,10 +132,10 @@ class OfficeViewerViewModel @Inject constructor(
         _events.emit(OfficeEvent.JumpToMatch(match.anchorIndex))
     }
 
-    fun addAnnotation(anchorIndex: Int, note: String) {
+    fun addAnnotation(anchorIndex: Int, note: String, sheetName: String? = null) {
         val uri = currentUri ?: return
         viewModelScope.launch {
-            annotationRepository.addAnnotation(uri.toString(), anchorIndex, note)
+            annotationRepository.addAnnotation(uri.toString(), anchorIndex, note, sheetName)
         }
     }
 

@@ -19,7 +19,6 @@ import java.security.KeyStore
 import java.security.MessageDigest
 import android.util.Base64
 import javax.crypto.Cipher
-import javax.crypto.CipherInputStream
 import javax.crypto.CipherOutputStream
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
@@ -94,6 +93,7 @@ class SecurityRepository @Inject constructor(
     fun decryptString(encrypted: String): String {
         val combined = Base64.decode(encrypted, Base64.NO_WRAP)
         val ivSize = combined[0].toInt()
+        require(ivSize == GCM_IV_BYTES && combined.size > 1 + ivSize) { "Invalid encrypted data" }
         val iv = combined.copyOfRange(1, 1 + ivSize)
         val cipherText = combined.copyOfRange(1 + ivSize, combined.size)
         val cipher = Cipher.getInstance("AES/GCM/NoPadding").apply {
@@ -123,16 +123,20 @@ class SecurityRepository @Inject constructor(
         original.parentFile?.mkdirs()
         encryptedFile.inputStream().use { input ->
             val ivSize = input.read()
+            if (ivSize != GCM_IV_BYTES) throw IllegalArgumentException("Invalid encrypted file")
             val iv = ByteArray(ivSize)
-            input.read(iv)
+            if (input.read(iv) != ivSize) throw IllegalArgumentException("Invalid encrypted file")
             val cipher = Cipher.getInstance("AES/GCM/NoPadding").apply {
                 init(Cipher.DECRYPT_MODE, secretKey(), GCMParameterSpec(128, iv))
             }
-            original.outputStream().use { output ->
-                CipherInputStream(input, cipher).use { cipherIn -> cipherIn.copyTo(output) }
-            }
+            val plain = cipher.doFinal(input.readBytes())
+            original.outputStream().use { output -> output.write(plain) }
         }
         encryptedFile.delete()
         dao.removeLockedItem(item)
+    }
+
+    private companion object {
+        const val GCM_IV_BYTES = 12
     }
 }

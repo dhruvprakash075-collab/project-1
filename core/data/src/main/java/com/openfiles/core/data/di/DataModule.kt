@@ -38,7 +38,6 @@ object DataModule {
     fun provideDatabase(@ApplicationContext context: Context): OpenFilesDb =
         Room.databaseBuilder(context, OpenFilesDb::class.java, "openfiles.db")
             .addMigrations(MIGRATION_3_4)
-            .fallbackToDestructiveMigration()
             .build()
 
     @Provides

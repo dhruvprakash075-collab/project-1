@@ -1,6 +1,8 @@
 package com.openfiles.core.data
 
+import android.annotation.SuppressLint
 import android.content.Context
+import android.content.IntentSender
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
@@ -9,6 +11,9 @@ import android.graphics.ColorMatrixColorFilter
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.net.Uri
+import android.os.Build
+import android.app.RecoverableSecurityException
+import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -19,6 +24,12 @@ import javax.inject.Singleton
 
 enum class ImageEditOp { ROTATE_LEFT, ROTATE_RIGHT, GRAYSCALE }
 
+sealed interface ImageEditResult {
+    data object Saved : ImageEditResult
+    data class NeedsWritePermission(val intentSender: IntentSender) : ImageEditResult
+    data object Failed : ImageEditResult
+}
+
 /**
  * v1 image editing: 90-degree rotation and a grayscale filter, applied in-memory via
  * android.graphics (zero new dependencies) and written back to the original file. Interactive
@@ -28,8 +39,8 @@ enum class ImageEditOp { ROTATE_LEFT, ROTATE_RIGHT, GRAYSCALE }
 class ImageEditRepository @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
-    suspend fun apply(uri: Uri, op: ImageEditOp): Boolean = withContext(Dispatchers.IO) {
-        val original = loadBitmap(uri) ?: return@withContext false
+    suspend fun apply(uri: Uri, op: ImageEditOp): ImageEditResult = withContext(Dispatchers.IO) {
+        val original = loadBitmap(uri) ?: return@withContext ImageEditResult.Failed
         val edited = when (op) {
             ImageEditOp.ROTATE_LEFT -> rotate(original, -90f)
             ImageEditOp.ROTATE_RIGHT -> rotate(original, 90f)
@@ -56,7 +67,8 @@ class ImageEditRepository @Inject constructor(
         return result
     }
 
-    private fun saveBitmap(uri: Uri, bitmap: Bitmap): Boolean {
+    @SuppressLint("NewApi")
+    private fun saveBitmap(uri: Uri, bitmap: Bitmap): ImageEditResult {
         val path = uri.path
         val format = if (path?.endsWith(".png", ignoreCase = true) == true) {
             Bitmap.CompressFormat.PNG
@@ -66,16 +78,29 @@ class ImageEditRepository @Inject constructor(
         return if (uri.scheme == "file" && path != null) {
             try {
                 FileOutputStream(File(path)).use { out -> bitmap.compress(format, 95, out) }
-                true
+                ImageEditResult.Saved
             } catch (e: Exception) {
-                false
+                ImageEditResult.Failed
             }
         } else {
             try {
-                context.contentResolver.openOutputStream(uri, "wt")?.use { out -> bitmap.compress(format, 95, out) } != null
+                val saved = context.contentResolver.openOutputStream(uri, "wt")
+                    ?.use { out -> bitmap.compress(format, 95, out) } == true
+                if (saved) ImageEditResult.Saved else ImageEditResult.Failed
+            } catch (e: RecoverableSecurityException) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    Log.w(TAG, "Write access required before saving edited image: $uri", e)
+                    ImageEditResult.NeedsWritePermission(e.userAction.actionIntent.intentSender)
+                } else {
+                    ImageEditResult.Failed
+                }
             } catch (e: Exception) {
-                false
+                ImageEditResult.Failed
             }
         }
+    }
+
+    private companion object {
+        const val TAG = "ImageEditRepository"
     }
 }

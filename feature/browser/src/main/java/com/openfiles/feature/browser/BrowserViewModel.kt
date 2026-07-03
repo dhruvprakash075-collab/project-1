@@ -12,6 +12,7 @@ import com.openfiles.core.data.RecentsRepository
 import com.openfiles.core.data.SecurityRepository
 import com.openfiles.core.data.TrashRepository
 import com.openfiles.core.data.db.TrashItem
+import com.openfiles.core.ui.permissions.StoragePermissions
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -45,6 +46,8 @@ enum class SortOption { NAME, DATE, SIZE }
 sealed interface BrowserEvent {
     data class ShowUndoDelete(val item: TrashItem) : BrowserEvent
     data class ShowError(val message: String) : BrowserEvent
+    data object RequestStoragePermission : BrowserEvent
+    data object RequestLegacyStoragePermission : BrowserEvent
 }
 
 private val DEFAULT_ROOT: Path = Paths.get("/storage/emulated/0")
@@ -145,10 +148,21 @@ class BrowserViewModel @Inject constructor(
         return true
     }
 
+    fun canNavigateUp(): Boolean = _currentPath.value.parent != null
+
     fun refresh() = loadCurrentFolder()
 
     private fun loadCurrentFolder() = viewModelScope.launch {
         _state.value = UiState.Loading
+        if (!StoragePermissions.hasStorageAccess(context)) {
+            _state.value = UiState.Error("Storage permission required", null)
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+                _events.emit(BrowserEvent.RequestStoragePermission)
+            } else {
+                _events.emit(BrowserEvent.RequestLegacyStoragePermission)
+            }
+            return@launch
+        }
         try {
             rawItems = repo.listPath(_currentPath.value)
             applyFilterAndSort()
@@ -239,8 +253,12 @@ class BrowserViewModel @Inject constructor(
             ClipboardMode.MOVE -> repo.move(paths, destination)
         }
         flow
-            .onCompletion { cause -> _opProgress.value = null; if (cause == null) refresh() }
-            .catch { e -> _events.emit(BrowserEvent.ShowError(e.message ?: "Operation failed")) }
+            .onCompletion { cause ->
+                _opProgress.value = null
+                if (cause != null) _events.emit(BrowserEvent.ShowError(cause.message ?: "Operation failed"))
+                refresh()
+            }
+            .catch { }
             .collect { done -> _opProgress.value = OpProgress(op.mode, done, paths.size) }
     }
 

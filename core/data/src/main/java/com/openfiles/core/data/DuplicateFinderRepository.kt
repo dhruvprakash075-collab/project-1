@@ -2,6 +2,7 @@ package com.openfiles.core.data
 
 import android.content.Context
 import android.os.Environment
+import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -41,8 +42,10 @@ class DuplicateFinderRepository @Inject constructor(
                     return FileVisitResult.CONTINUE
                 }
 
-                override fun visitFileFailed(file: Path, exc: IOException): FileVisitResult =
-                    FileVisitResult.CONTINUE
+                override fun visitFileFailed(file: Path, exc: IOException): FileVisitResult {
+                    Log.w(TAG, "Skipping unreadable path while finding duplicates: $file", exc)
+                    return FileVisitResult.CONTINUE
+                }
             })
         }
 
@@ -56,5 +59,9 @@ class DuplicateFinderRepository @Inject constructor(
 
         byHash.filterValues { it.size > 1 }
             .map { (hash, files) -> DuplicateGroup(hash, files.first().length(), files) }
+    }
+
+    private companion object {
+        const val TAG = "DuplicateFinderRepository"
     }
 }

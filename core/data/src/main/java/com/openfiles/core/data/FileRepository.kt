@@ -13,6 +13,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.StandardCopyOption
 import java.nio.file.attribute.BasicFileAttributes
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -75,15 +76,36 @@ class FileRepository @Inject constructor(
 
     fun copy(items: List<Path>, destination: Path): Flow<Int> = flow {
         items.forEachIndexed { index, src ->
-            src.toFile().copyRecursively(File(destination.toFile(), src.fileName.toString()), overwrite = true)
+            val target = nextAvailableFile(destination.toFile(), src.fileName.toString())
+            src.toFile().copyRecursively(target, overwrite = false)
             emit(index + 1)
         }
     }.flowOn(Dispatchers.IO)
 
     fun move(items: List<Path>, destination: Path): Flow<Int> = flow {
         items.forEachIndexed { index, src ->
-            Files.move(src, destination.resolve(src.fileName))
+            val target = destination.resolve(src.fileName)
+            try {
+                Files.move(src, target, StandardCopyOption.REPLACE_EXISTING)
+            } catch (e: Exception) {
+                src.toFile().copyRecursively(target.toFile(), overwrite = true)
+                src.toFile().deleteRecursively()
+            }
             emit(index + 1)
         }
     }.flowOn(Dispatchers.IO)
+
+    private fun nextAvailableFile(parent: File, name: String): File {
+        val original = File(parent, name)
+        if (!original.exists()) return original
+        val dot = name.lastIndexOf('.')
+        val base = if (dot > 0) name.substring(0, dot) else name
+        val ext = if (dot > 0) name.substring(dot) else ""
+        var index = 1
+        while (true) {
+            val candidate = File(parent, "$base ($index)$ext")
+            if (!candidate.exists()) return candidate
+            index += 1
+        }
+    }
 }
