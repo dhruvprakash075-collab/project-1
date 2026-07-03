@@ -31,7 +31,7 @@ import androidx.compose.material.icons.filled.FolderZip
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
@@ -156,18 +156,6 @@ fun BrowserScreen(
                                 if (isBookmarked) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder,
                                 contentDescription = if (isBookmarked) "Remove bookmark" else "Bookmark this folder",
                             )
-                        }
-                        IconButton(onClick = { onOpenRoute(Route.Bookmarks) }) {
-                            Icon(Icons.Filled.Folder, contentDescription = "Bookmarks")
-                        }
-                        IconButton(onClick = { onOpenRoute(Route.Locked) }) {
-                            Icon(Icons.Filled.Lock, contentDescription = "Locked folder")
-                        }
-                        IconButton(onClick = { onOpenRoute(Route.Storage) }) {
-                            Icon(Icons.Filled.Storage, contentDescription = "Storage dashboard")
-                        }
-                        IconButton(onClick = { onOpenRoute(Route.CloudConnections) }) {
-                            Icon(Icons.Filled.Storage, contentDescription = "Cloud and network")
                         }
                         IconButton(onClick = viewModel::activateSearch) {
                             Icon(Icons.Filled.Search, contentDescription = "Search this folder")
@@ -348,6 +336,7 @@ private fun OverflowMenuButton(onOpenRoute: (Route) -> Unit) {
             DropdownMenuItem(text = { Text("Locked folder") }, onClick = { expanded = false; onOpenRoute(Route.Locked) })
             DropdownMenuItem(text = { Text("Storage dashboard") }, onClick = { expanded = false; onOpenRoute(Route.Storage) })
             DropdownMenuItem(text = { Text("App manager") }, onClick = { expanded = false; onOpenRoute(Route.AppManager) })
+            DropdownMenuItem(text = { Text("Cloud & network") }, onClick = { expanded = false; onOpenRoute(Route.CloudConnections) })
         }
     }
 }
