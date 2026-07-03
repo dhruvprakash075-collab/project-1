@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Image
@@ -33,6 +34,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.openfiles.core.common.Route
 import com.openfiles.core.common.UiState
 import com.openfiles.core.common.toHumanReadableSize
 import com.openfiles.core.data.CategoryUsage
@@ -45,6 +47,7 @@ import com.openfiles.core.ui.components.ErrorState
 @Composable
 fun StorageDashboardScreen(
     onBack: () -> Unit,
+    onOpenRoute: (Route) -> Unit = {},
     viewModel: StorageDashboardViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -56,6 +59,11 @@ fun StorageDashboardScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { onOpenRoute(Route.Duplicates) }) {
+                        Icon(Icons.Filled.ContentCopy, contentDescription = "Find duplicate files")
                     }
                 },
             )
