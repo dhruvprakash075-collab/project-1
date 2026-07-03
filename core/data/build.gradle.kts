@@ -7,7 +7,10 @@ plugins {
 android {
     namespace = "com.openfiles.core.data"
     compileSdk = 36
-    defaultConfig { minSdk = 26 }
+    defaultConfig {
+        minSdk = 26
+        ndk { abiFilters += setOf("arm64-v8a", "armeabi-v7a", "x86_64") }
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -45,6 +48,7 @@ dependencies {
     implementation(libs.zip4j)
     implementation(libs.junrar)
     implementation(libs.smbj)
+    implementation(libs.jna)
 
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 
