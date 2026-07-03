@@ -79,7 +79,7 @@ class StorageRepository @Inject constructor(
     }
 
     private fun categorize(file: File, downloadsDir: File): StorageCategory {
-        if (file.parentFile?.absolutePath?.startsWith(downloadsDir.absolutePath) == true) return StorageCategory.DOWNLOADS
+        if (file.parentFile?.let { isInDirectory(it, downloadsDir) } == true) return StorageCategory.DOWNLOADS
         return when (file.extension.lowercase()) {
             in imageExt -> StorageCategory.IMAGES
             in videoExt -> StorageCategory.VIDEO
@@ -88,6 +88,12 @@ class StorageRepository @Inject constructor(
             "apk" -> StorageCategory.APPS
             else -> StorageCategory.OTHER
         }
+    }
+
+    private fun isInDirectory(file: File, directory: File): Boolean {
+        val filePath = file.canonicalFile.toPath().normalize()
+        val directoryPath = directory.canonicalFile.toPath().normalize()
+        return filePath == directoryPath || filePath.startsWith(directoryPath)
     }
 
     private companion object {
