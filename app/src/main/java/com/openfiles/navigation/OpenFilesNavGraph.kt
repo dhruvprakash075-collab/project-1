@@ -26,6 +26,7 @@ import com.openfiles.bookmarks.BookmarksScreen
 import com.openfiles.cloud.CloudBrowserScreen
 import com.openfiles.cloud.CloudConnectionsScreen
 import com.openfiles.core.common.Route
+import com.openfiles.duplicates.DuplicatesScreen
 import com.openfiles.feature.browser.BrowserScreen
 import com.openfiles.feature.gallery.GalleryScreen
 import com.openfiles.feature.viewer.archive.ArchiveViewerScreen
@@ -113,7 +114,8 @@ fun OpenFilesNavGraph(startRoute: Route = Route.Browser()) {
             is Route.Office -> OfficeViewerScreen(route = route, onBack = ::pop)
             is Route.Text -> TextViewerScreen(route = route, onBack = ::pop)
             is Route.Archive -> ArchiveViewerScreen(route = route, onBack = ::pop)
-            Route.Storage -> StorageDashboardScreen(onBack = ::pop)
+            Route.Storage -> StorageDashboardScreen(onBack = ::pop, onOpenRoute = { backstack.add(it) })
+            Route.Duplicates -> DuplicatesScreen(onBack = ::pop)
             Route.AppManager -> AppManagerScreen(onBack = ::pop)
         }
     }
